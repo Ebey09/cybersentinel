@@ -25,7 +25,7 @@ datasets:
     track: B
     name: CIC-Darknet2020
     original_homepage: https://www.unb.ca/cic/datasets/darknet2020.html
-    extractor: "CICFlowMeter, upstream (https://github.com/ahlashkari/CICFlowMeter). [VERIFY] exact version: not documented in the sources checked."
+    extractor: "CICFlowMeter, upstream (https://github.com/ahlashkari/CICFlowMeter). [VERIFY] V25 exact version: not documented in the sources checked. If it stays undocumented, record it as not_documented (ADR 0010), never guess."
     acquisition:
       option_1: "Download the CSV from UNB CIC (registration form). [VERIFY] current process and file name."
     terms: "[VERIFY] read the UNB CIC terms of use on the dataset page. Do not commit dataset rows to git."

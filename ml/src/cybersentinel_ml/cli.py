@@ -74,6 +74,8 @@ def cmd_check_header(args: argparse.Namespace) -> int:
     header = _read_header(Path(args.csv))
     print(f"schema: {schema.schema_id} v{schema.schema_version} ({len(schema.raw_columns)} columns expected)")
     print(f"csv:    {args.csv} ({len(header)} columns found)")
+    for r in schema.positional_renames:
+        print(f"  declared rename (applied by the adapter, not here): position {r.position} {r.raw_name!r}")
     results = check_raw_header(header, schema)
     for r in results:
         print(f"  [{'ok' if r.passed else 'FAIL'}] {r.name}: {r.detail}")
@@ -143,7 +145,8 @@ def render_schema_markdown(schema: FeatureSchema, sha: str) -> str:
         f"- Schema: `{schema.schema_id}` v{schema.schema_version} (status: **{schema.status.value}**)",
         f"- Content SHA-256: `{sha}`",
         f"- Dataset: {schema.dataset.name}",
-        f"- Extractor: {schema.extractor.name}, commit `{schema.extractor.commit}`",
+        f"- Extractor: {schema.extractor.name}, commit `{schema.extractor.commit}` "
+        f"(commit status: **{schema.extractor.commit_status}**)",
         f"- Flow timeout: {schema.extractor.flow_timeout_us} us, activity timeout: "
         f"{schema.extractor.activity_timeout_us} us",
         f"- PCAP parity: **{schema.parity.status.value}**",
@@ -178,6 +181,12 @@ def render_schema_markdown(schema: FeatureSchema, sha: str) -> str:
     ]
     for c in schema.identifier_columns:
         out.append(f"| `{c.name}` | {_cell(c.source_column)} | {', '.join(c.used_for)} | {_cell(c.reason)} |")
+    if schema.positional_renames:
+        out += ["", "## Positional renames (declared, applied by the dataset adapter)", ""]
+        for r in schema.positional_renames:
+            out.append(
+                f"- Position {r.position}: raw `{r.raw_name}` -> `{r.resolved_name}`. {_cell(r.reason)}"
+            )
     out += ["", "## Label columns", ""]
     for lab in schema.label_columns:
         out.append(f"- `{lab.source_column}` -> `{lab.name}`. {_cell(lab.notes)}")

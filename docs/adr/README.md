@@ -15,3 +15,5 @@ A superseded ADR is kept and marked, never deleted.
 | [0007](0007-withhold-predictions-without-parity.md) | Withhold ML predictions (fail closed) when the contract cannot be demonstrated | Accepted |
 | [0008](0008-deep-learning-is-optional.md) | Deep learning is an optional comparison, not a default component | Accepted |
 | [0009](0009-ml-first-build-order.md) | Build and validate the ML pipeline before the web application | Accepted |
+| [0010](0010-undocumented-extractor-provenance.md) | A dataset whose extractor version is not documented can be verified, but never used for inference | Accepted |
+| [0011](0011-explicit-positional-renames-for-ambiguous-headers.md) | Ambiguous raw column names are resolved by declared positional renames, never silently | Accepted |

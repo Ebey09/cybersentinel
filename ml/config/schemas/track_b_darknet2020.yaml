@@ -2,10 +2,11 @@
 # Source of truth for training AND inference. Validated by cybersentinel_ml.contract.
 # status: draft -> training and inference refuse to run until it is 'verified'.
 # Column list taken from FlowFeature.java in github.com/ahlashkari/CICFlowMeter (current master, 84 columns incl. Label)
-# plus a second label column. The real CSV header must be checked before this becomes 'verified'.
+# plus a second label column. The raw name of that column is unverified: the draft assumes the file repeats 'Label',
+# declared in positional_renames (ADR 0011). The real CSV header must be checked before this becomes 'verified'.
 
 schema_id: track_b.cicdarknet2020
-schema_version: 0.1.0
+schema_version: 0.2.0
 status: draft
 track: B
 title: 'Track B: Darknet/VPN traffic characterization (CIC-Darknet2020)'
@@ -17,6 +18,7 @@ extractor:
   name: CICFlowMeter (upstream, ahlashkari)
   repository: https://github.com/ahlashkari/CICFlowMeter
   commit: '[VERIFY] unknown. The version CIC used in 2020 is not documented in the sources checked.'
+  commit_status: to_verify
   flow_timeout_us: null
   activity_timeout_us: null
   pcap_preprocessing: []
@@ -116,7 +118,14 @@ raw_columns:
 - Idle Max
 - Idle Min
 - Label
-- Label.1
+- Label (column 84)
+positional_renames:
+- position: 84
+  raw_name: Label
+  resolved_name: Label (column 84)
+  reason: '[VERIFY] V4. Draft assumption: the raw CSV names both label columns ''Label'' (traffic type, then
+    application category). ''Label.1'' is what pandas would call the second one, not a name taken from the file. If
+    the real header gives the second column its own name, use that name in raw_columns and delete this rename.'
 identifier_columns:
 - name: flow_id
   source_column: Flow ID
@@ -169,11 +178,11 @@ label_columns:
 - source_column: Label
   name: traffic_type
   notes: '[VERIFY] exact strings. Literature reports Tor, Non-Tor, VPN, Non-VPN.'
-- source_column: Label.1
+- source_column: Label (column 84)
   name: application_category
-  notes: '[VERIFY] exact column name (pandas renames a duplicated ''Label'' header to ''Label.1'') and exact strings,
-    including casing. Literature reports Audio-Streaming, Browsing, Chat, Email, File Transfer, P2P, Video-Streaming,
-    VOIP.'
+  notes: '[VERIFY] V4: raw column name (see positional_renames). V6: exact strings and casing. Eight categories are
+    reported: audio streaming, browsing, chat, email, file transfer, P2P, video streaming, VoIP. The raw spelling is
+    not confirmed (for example ''File Transfer'' vs ''File-Transfer'').'
 features:
 - name: dst_port
   source_column: Dst Port

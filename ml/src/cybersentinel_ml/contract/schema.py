@@ -107,16 +107,24 @@ class ExtractorSpec(_Strict):
     name: str
     repository: str
     commit: str
+    # pinned: the exact commit is known. to_verify: not checked yet. not_documented: checked, and the
+    # dataset authors do not document it. Only 'pinned' allows parity or inference (ADR 0010).
+    commit_status: Literal["pinned", "to_verify", "not_documented"]
     flow_timeout_us: int | None
     activity_timeout_us: int | None
     pcap_preprocessing: list[str]
     known_header_columns: int
     notes: str | None = None
 
+    @model_validator(mode="after")
+    def _pinned_needs_real_commit(self) -> ExtractorSpec:
+        if self.commit_status == "pinned" and ("[VERIFY]" in self.commit or len(self.commit.strip()) < 7):
+            raise ValueError("extractor commit_status 'pinned' needs a real commit, not a placeholder")
+        return self
+
     @property
     def is_pinned(self) -> bool:
-        """A commit containing a [VERIFY] marker is not a pinned commit."""
-        return "[VERIFY]" not in self.commit and len(self.commit.strip()) >= 7
+        return self.commit_status == "pinned"
 
 
 class ParitySpec(_Strict):
@@ -125,6 +133,19 @@ class ParitySpec(_Strict):
     required_for: list[str]
     test: str
     notes: str | None = None
+
+
+class PositionalRename(_Strict):
+    """A raw column whose name is ambiguous (for example a header that repeats 'Label').
+
+    raw_columns holds the resolved name. The raw file must have raw_name at this position.
+    The dataset adapter renames it explicitly, and only after the raw header check passed (ADR 0011).
+    """
+
+    position: int = Field(ge=0)
+    raw_name: str
+    resolved_name: str
+    reason: str = Field(min_length=10)
 
 
 class DerivedFeature(_Strict):
@@ -180,6 +201,7 @@ class FeatureSchema(_Strict):
     extractor: ExtractorSpec
     parity: ParitySpec
     raw_columns: list[str] = Field(min_length=1)
+    positional_renames: list[PositionalRename] = Field(default_factory=list)
     identifier_columns: list[IdentifierSpec]
     label_columns: list[LabelColumnSpec] = Field(min_length=1)
     features: list[FeatureSpec] = Field(min_length=1)
@@ -194,6 +216,17 @@ class FeatureSchema(_Strict):
         dupes = sorted({c for c in self.raw_columns if self.raw_columns.count(c) > 1})
         if dupes:
             errors.append(f"raw_columns has duplicates: {dupes}")
+
+        positions = [r.position for r in self.positional_renames]
+        if len(set(positions)) != len(positions):
+            errors.append("positional_renames has duplicate positions")
+        for r in self.positional_renames:
+            if r.position >= len(self.raw_columns):
+                errors.append(f"positional rename at {r.position} is past the end of raw_columns")
+            elif self.raw_columns[r.position] != r.resolved_name:
+                errors.append(f"raw_columns[{r.position}] must be the resolved name {r.resolved_name!r}")
+            if r.raw_name == r.resolved_name:
+                errors.append(f"positional rename at {r.position} does not change the name")
 
         # Every raw column must be accounted for exactly once.
         roles: dict[str, list[str]] = {}
@@ -236,14 +269,31 @@ class FeatureSchema(_Strict):
         if self.status == SchemaStatus.VERIFIED:
             if any(f.status != "verified" for f in self.features):
                 errors.append("a verified schema cannot contain draft features")
-            if not self.extractor.is_pinned:
-                errors.append("a verified schema needs a pinned extractor commit")
+            if self.extractor.commit_status == "to_verify":
+                errors.append(
+                    "a verified schema needs a pinned extractor commit, or one confirmed as not documented"
+                )
+        if self.extractor.commit_status == "not_documented":
+            # Without the exact extractor, PCAP parity cannot be shown (ADR 0006, ADR 0010).
+            if self.parity.status == ParityStatus.DEMONSTRATED:
+                errors.append("parity cannot be demonstrated when the extractor commit is not documented")
+            if any(f.pcap_available == "pinned_extractor_only" for f in self.features):
+                errors.append(
+                    "features cannot be 'pinned_extractor_only' when the extractor is not documented"
+                )
 
         if errors:
             raise ValueError("; ".join(errors))
         return self
 
     # ---- convenience -------------------------------------------------
+
+    def expected_raw_header(self) -> list[str]:
+        """The header exactly as the raw file must have it, before any declared rename."""
+        header = list(self.raw_columns)
+        for r in self.positional_renames:
+            header[r.position] = r.raw_name
+        return header
 
     def input_feature_names(self) -> list[str]:
         """Model input features in schema order, BEFORE fitted preprocessing

@@ -46,7 +46,7 @@ Identifier columns (Flow ID, IPs, source port, timestamp) are declared separatel
 
 Applied in this order. Everything that is "fitted" is fitted on the **training split only** and stored in the preprocessing manifest.
 
-1. **Header check.** Raw CSV header must equal `raw_columns` exactly (names and order). No silent renaming or whitespace stripping; an adapter must do that explicitly if a dataset needs it.
+1. **Header check.** Raw CSV header must equal the schema's expected raw header exactly (names and order): `raw_columns`, with any declared `positional_renames` put back to their raw names. No silent renaming or whitespace stripping; an adapter must do that explicitly if a dataset needs it. A repeated raw name (for example two `Label` columns) is resolved only by a declared positional rename, applied after the check passes (ADR 0011).
 2. **Label mapping.** Raw labels map to classes through the experiment's `label_map`. An unknown label **fails the run** (`unknown_label_policy: fail`).
 3. **Type validation.** Numeric columns that contain non-numeric strings fail validation. Rows are not silently coerced.
 4. **Infinity to NaN.** CICFlowMeter writes Infinity/NaN for rate features when duration is 0.
@@ -66,16 +66,17 @@ Any change to these rules bumps `preprocessing.version`, which invalidates every
 
 | Check | Where | Blocks |
 |---|---|---|
-| Schema internally consistent: every raw column has exactly one role; no duplicate names; excluded features have a reason; a verified schema has a pinned commit | `FeatureSchema` validator, on every load | Loading |
+| Schema internally consistent: every raw column has exactly one role; no duplicate names; excluded features have a reason; positional renames point at their resolved names; a verified schema has an extractor commit that is `pinned` or confirmed `not_documented`; `not_documented` rules out parity (ADR 0010) | `FeatureSchema` validator, on every load | Loading |
 | Unknown YAML keys | `extra="forbid"` on every model | Loading |
 | Identifiers and labels are never model inputs | `tests/test_schema_files.py` | CI |
 | Track B display text uses no harm vocabulary | schema `forbidden_terms` + `load_experiment` + tests | Loading, CI |
-| Raw header: duplicates, missing, unexpected, order (with whitespace hint) | `check_raw_header`, `cybersentinel-ml check-header` | Ingestion |
+| Raw header: duplicates (unless declared), missing, unexpected, order (with whitespace hint) | `check_raw_header`, `cybersentinel-ml check-header` | Ingestion |
+| Declared positional renames applied only to an exactly matching raw header | `resolve_raw_header` (called by adapters) | Ingestion |
 | Feature frame: missing, unexpected, order, numeric dtypes | `check_feature_frame` | Inference |
 | Schema id/version/hash match the model | inference gate | Inference |
 | Preprocessing version matches | inference gate | Inference |
 | Extractor name/repository/commit/timeouts match training data | inference gate | Inference |
-| Extractor commit pinned | inference gate | Inference |
+| Extractor commit pinned (`commit_status: pinned`) | inference gate | Inference |
 | PCAP parity demonstrated; PCAP flows produced by the platform's extractor | inference gate | PCAP inference |
 | Feature order hash matches order in manifest | `PreprocessingManifest` validator | Loading a model |
 
@@ -109,7 +110,7 @@ Current state: Track A parity is `not_demonstrated`, Track B parity cannot be de
 2. `cybersentinel-ml check-header` passes (or the schema is corrected to match reality, with the change reviewed).
 3. `cybersentinel-ml inspect-labels --experiment ...` shows no unmapped labels.
 4. Phase 4 EDA diagnostics resolve the feature-level [VERIFY] notes (sentinel values, flag semantics, timestamp-like values).
-5. Extractor commit is pinned (Track A).
+5. Extractor `commit_status` is `pinned`, or confirmed `not_documented` with the evidence in `VERIFY.md` (ADR 0010). Track A must be `pinned`.
 6. Set feature `status: verified`, schema `status: verified`, bump `schema_version`, regenerate docs, commit.
 
-Parity is a separate, later step (ADR 0006). A verified schema allows CSV training and CSV inference. PCAP inference also needs `parity.status: demonstrated`.
+Parity is a separate, later step (ADR 0006). A verified schema allows training and evaluation on the dataset's CSV files. Inference on new data also needs a pinned extractor that the batch's provenance matches, and PCAP inference also needs `parity.status: demonstrated`. A schema whose extractor is `not_documented` is limited to offline training and evaluation; its predictions on uploaded CSVs and PCAPs are withheld (ADR 0010).

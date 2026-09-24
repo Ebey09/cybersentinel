@@ -2,10 +2,10 @@
 
 > Generated from the schema YAML by `cybersentinel-ml schema-docs`. Do not edit by hand.
 
-- Schema: `track_b.cicdarknet2020` v0.1.0 (status: **draft**)
-- Content SHA-256: `7ee89f01bede4acab94c6770e20704d93524bb6f4035c4c3316dc9fc3f4559c7`
+- Schema: `track_b.cicdarknet2020` v0.2.0 (status: **draft**)
+- Content SHA-256: `d38afd3e0cad53d069314a1d5c455366f900b3e06820e2ce87b3cbb497dba5ce`
 - Dataset: CIC-Darknet2020
-- Extractor: CICFlowMeter (upstream, ahlashkari), commit `[VERIFY] unknown. The version CIC used in 2020 is not documented in the sources checked.`
+- Extractor: CICFlowMeter (upstream, ahlashkari), commit `[VERIFY] unknown. The version CIC used in 2020 is not documented in the sources checked.` (commit status: **to_verify**)
 - Flow timeout: None us, activity timeout: None us
 - PCAP parity: **not_demonstrated**
 - Preprocessing version: 0.1.0
@@ -113,10 +113,14 @@
 | `dst_ip` | Dst IP | display, alert_rules, related_flows | Lab-specific, same reason as Src IP. Kept for display and alert rules only. |
 | `timestamp` | Timestamp | display, alert_rules, related_flows | Labels were assigned by time window, so time is a direct label proxy. Kept for display, related-flow lookup and timelines only. |
 
+## Positional renames (declared, applied by the dataset adapter)
+
+- Position 84: raw `Label` -> `Label (column 84)`. [VERIFY] V4. Draft assumption: the raw CSV names both label columns 'Label' (traffic type, then application category). 'Label.1' is what pandas would call the second one, not a name taken from the file. If the real header gives the second column its own name, use that name in raw_columns and delete this rename.
+
 ## Label columns
 
 - `Label` -> `traffic_type`. [VERIFY] exact strings. Literature reports Tor, Non-Tor, VPN, Non-VPN.
-- `Label.1` -> `application_category`. [VERIFY] exact column name (pandas renames a duplicated 'Label' header to 'Label.1') and exact strings, including casing. Literature reports Audio-Streaming, Browsing, Chat, Email, File Transfer, P2P, Video-Streaming, VOIP.
+- `Label (column 84)` -> `application_category`. [VERIFY] V4: raw column name (see positional_renames). V6: exact strings and casing. Eight categories are reported: audio streaming, browsing, chat, email, file transfer, P2P, video streaming, VoIP. The raw spelling is not confirmed (for example 'File Transfer' vs 'File-Transfer').
 
 ## Output vocabulary
 

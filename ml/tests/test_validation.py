@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 import pandas as pd
+import pytest
 
 from cybersentinel_ml.contract.schema import FeatureSchema
-from cybersentinel_ml.contract.validation import all_passed, check_feature_frame, check_raw_header
+from cybersentinel_ml.contract.validation import (
+    all_passed,
+    check_feature_frame,
+    check_raw_header,
+    resolve_raw_header,
+)
 
 from .conftest import make_frame
 
@@ -43,13 +49,34 @@ def test_whitespace_padded_columns_get_a_hint(schema_a: FeatureSchema) -> None:
     assert "whitespace" in r["header_no_missing_columns"].detail
 
 
-def test_duplicate_header_columns_fail(schema_b: FeatureSchema) -> None:
-    # CIC-Darknet2020 may ship two columns literally named "Label". The schema expects
-    # "Label" and "Label.1", so a raw duplicate must be caught, not silently accepted.
-    header = [c if c != "Label.1" else "Label" for c in schema_b.raw_columns]
-    r = _by_name(check_raw_header(header, schema_b))
+def test_undeclared_duplicate_header_column_fails(schema_a: FeatureSchema) -> None:
+    header = [*schema_a.raw_columns, "Flow ID"]
+    r = _by_name(check_raw_header(header, schema_a))
     assert not r["header_no_duplicates"].passed
-    assert not r["header_no_missing_columns"].passed
+    assert "'Flow ID' appears 2 times" in r["header_no_duplicates"].detail
+
+
+def test_declared_duplicate_label_passes_and_resolves_by_position(schema_b: FeatureSchema) -> None:
+    # Draft Track B assumes the raw file repeats "Label" (ADR 0011). The raw header passes
+    # only because the schema declares it, and the rename happens in a separate, explicit step.
+    header = schema_b.expected_raw_header()
+    assert header.count("Label") == 2
+    r = _by_name(check_raw_header(header, schema_b))
+    assert all_passed(list(r.values()))
+    assert "declared" in r["header_no_duplicates"].detail
+    assert resolve_raw_header(header, schema_b) == schema_b.raw_columns
+
+
+def test_resolved_name_is_not_accepted_as_a_raw_column(schema_b: FeatureSchema) -> None:
+    # The resolved name exists only inside the pipeline. A file that already carries it
+    # (or a pandas-style "Label.1") is a different header and must fail, not be renamed.
+    for second in ("Label (column 84)", "Label.1"):
+        header = [*schema_b.raw_columns[:-1], second]
+        r = _by_name(check_raw_header(header, schema_b))
+        assert not r["header_no_unexpected_columns"].passed
+        assert not r["header_no_duplicates"].passed  # 'Label' appears once, schema expects twice
+        with pytest.raises(ValueError):
+            resolve_raw_header(header, schema_b)
 
 
 def test_feature_frame_happy_path(schema_a: FeatureSchema) -> None:

@@ -42,6 +42,7 @@ def make_verified(schema: FeatureSchema, parity: str = "demonstrated") -> Featur
     data = schema.model_dump(mode="json")
     data["status"] = "verified"
     data["extractor"]["commit"] = PINNED_COMMIT
+    data["extractor"]["commit_status"] = "pinned"
     data["parity"]["status"] = parity
     for f in data["features"]:
         f["status"] = "verified"

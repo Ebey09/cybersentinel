@@ -96,3 +96,46 @@ def test_verified_schema_requires_pinned_commit(schema_a: FeatureSchema) -> None
         f["status"] = "verified"
     with pytest.raises(ValueError, match="pinned extractor commit"):
         FeatureSchema.model_validate(data)
+
+
+def _verified_data(schema: FeatureSchema, commit_status: str) -> dict:  # type: ignore[type-arg]
+    data = schema.model_dump(mode="json")
+    data["status"] = "verified"
+    data["extractor"]["commit_status"] = commit_status
+    for f in data["features"]:
+        f["status"] = "verified"
+    return data
+
+
+def test_pinned_status_needs_a_real_commit(schema_a: FeatureSchema) -> None:
+    data = schema_a.model_dump(mode="json")
+    data["extractor"]["commit_status"] = "pinned"  # commit is still the [VERIFY] placeholder
+    with pytest.raises(ValueError, match="needs a real commit"):
+        FeatureSchema.model_validate(data)
+
+
+def test_verified_schema_accepts_an_extractor_confirmed_as_not_documented(schema_b: FeatureSchema) -> None:
+    # ADR 0010: the data itself can be verified even when the authors never documented the extractor.
+    schema = FeatureSchema.model_validate(_verified_data(schema_b, "not_documented"))
+    assert schema.status == SchemaStatus.VERIFIED
+    assert not schema.extractor.is_pinned
+
+
+def test_not_documented_extractor_rules_out_parity(schema_b: FeatureSchema) -> None:
+    data = _verified_data(schema_b, "not_documented")
+    data["parity"]["status"] = "demonstrated"
+    with pytest.raises(ValueError, match="parity cannot be demonstrated"):
+        FeatureSchema.model_validate(data)
+
+
+def test_track_a_extractor_is_never_marked_not_documented(schema_a: FeatureSchema) -> None:
+    # Track A's extractor is knowable: pin the release's commit, or regenerate with a pinned
+    # build (V8, ADR 0006). 'not_documented' is only for a dataset whose authors never said.
+    assert schema_a.extractor.commit_status != "not_documented"
+
+
+def test_positional_rename_must_point_at_its_resolved_name(schema_b: FeatureSchema) -> None:
+    data = schema_b.model_dump(mode="json")
+    data["positional_renames"][0]["position"] = 0  # raw_columns[0] is 'Flow ID', not the resolved name
+    with pytest.raises(ValueError, match="must be the resolved name"):
+        FeatureSchema.model_validate(data)
