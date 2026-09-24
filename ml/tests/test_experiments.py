@@ -20,12 +20,85 @@ def test_experiment_loads_against_its_schema(path: Path, repo_root: Path) -> Non
     assert exp.seed == 42
 
 
-def test_track_a_attempted_flows_map_to_benign(repo_root: Path) -> None:
-    exp, _, _ = load_experiment(repo_root / "ml/config/experiments/track_a_binary.yaml", repo_root)
-    attempted = {k: v for k, v in exp.label_map.items() if k.endswith(" - Attempted")}
-    assert attempted, "expected '- Attempted' labels in the Track A map"
-    assert set(attempted.values()) == {"BENIGN"}
-    assert "PortScan - Attempted" not in exp.label_map  # PortScan has no Attempted variant
+# The 27 distinct Label values observed in the five CNS2022 Improved CIC-IDS2017 CSVs (V5), exact spelling.
+OBSERVED_TRACK_A_LABELS = [
+    "BENIGN",
+    "FTP-Patator",
+    "FTP-Patator - Attempted",
+    "SSH-Patator",
+    "SSH-Patator - Attempted",
+    "DoS Hulk",
+    "DoS Hulk - Attempted",
+    "DoS GoldenEye",
+    "DoS GoldenEye - Attempted",
+    "DoS Slowloris",
+    "DoS Slowloris - Attempted",
+    "DoS Slowhttptest",
+    "DoS Slowhttptest - Attempted",
+    "Heartbleed",
+    "Web Attack - Brute Force",
+    "Web Attack - Brute Force - Attempted",
+    "Web Attack - XSS",
+    "Web Attack - XSS - Attempted",
+    "Web Attack - SQL Injection",
+    "Web Attack - SQL Injection - Attempted",
+    "Infiltration",
+    "Infiltration - Attempted",
+    "Infiltration - Portscan",
+    "Portscan",
+    "DDoS",
+    "Botnet",
+    "Botnet - Attempted",
+]
+TRACK_A_EXPERIMENTS = ["track_a_binary", "track_a_multiclass_family"]
+
+
+def _track_a(name: str, repo_root: Path) -> ExperimentConfig:
+    exp, _, _ = load_experiment(repo_root / f"ml/config/experiments/{name}.yaml", repo_root)
+    return exp
+
+
+def test_observed_track_a_labels_are_distinct() -> None:
+    assert len(OBSERVED_TRACK_A_LABELS) == len(set(OBSERVED_TRACK_A_LABELS)) == 27
+
+
+@pytest.mark.parametrize("name", TRACK_A_EXPERIMENTS)
+def test_every_observed_track_a_label_has_an_exact_mapping(name: str, repo_root: Path) -> None:
+    exp = _track_a(name, repo_root)
+    missing = [label for label in OBSERVED_TRACK_A_LABELS if label not in exp.label_map]
+    assert not missing
+    assert exp.unknown_label_policy == "fail"
+
+
+@pytest.mark.parametrize("name", TRACK_A_EXPERIMENTS)
+def test_track_a_attempted_flows_map_to_benign_and_never_form_a_class(name: str, repo_root: Path) -> None:
+    exp = _track_a(name, repo_root)
+    attempted = [label for label in OBSERVED_TRACK_A_LABELS if label.endswith(" - Attempted")]
+    assert len(attempted) == 11
+    assert {exp.label_map[label] for label in attempted} == {"BENIGN"}
+    assert not any("ATTEMPT" in cls.upper() for cls in exp.classes())
+    assert "Portscan - Attempted" not in exp.label_map  # CNS2022 has no Attempted variant for Portscan
+
+
+def test_track_a_specific_mappings(repo_root: Path) -> None:
+    binary = _track_a("track_a_binary", repo_root).label_map
+    family = _track_a("track_a_multiclass_family", repo_root).label_map
+    expected = {
+        "Infiltration - Portscan": ("ATTACK", "PORTSCAN"),
+        "Portscan": ("ATTACK", "PORTSCAN"),
+        "Botnet": ("ATTACK", "BOTNET"),
+        "Infiltration": ("ATTACK", "INFILTRATION"),
+        "DDoS": ("ATTACK", "DDOS"),
+        "BENIGN": ("BENIGN", "BENIGN"),
+    }
+    for label, (b, f) in expected.items():
+        assert (binary[label], family[label]) == (b, f), label
+
+
+def test_track_a_maps_have_no_obsolete_wtmc_spellings(repo_root: Path) -> None:
+    obsolete = {"DoS slowloris", "Web Attack - Sql Injection", "Bot", "PortScan", "Heartbleed - Attempted"}
+    for name in TRACK_A_EXPERIMENTS:
+        assert not obsolete & set(_track_a(name, repo_root).label_map), name
 
 
 def test_track_b_never_uses_harm_vocabulary(repo_root: Path) -> None:

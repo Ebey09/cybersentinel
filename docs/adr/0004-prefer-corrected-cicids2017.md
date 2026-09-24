@@ -31,7 +31,7 @@ A follow-up paper (Liu, Engelen et al., CNS 2022) applied a similar process to C
 
 - [VERIFY] Which release is used: WTMC 2021 or CNS 2022, and whether pre-built CSVs are downloadable (the authors' site was not reachable when this ADR was written).
 - [VERIFY] The real CSV header matches `raw_columns` in the Track A schema (the schema currently uses the fork's current 94-column header).
-- [VERIFY] Label strings in the chosen release match those in `track_a_*.yaml` (currently taken from the WTMC 2021 scripts).
+- Label strings in the chosen release match those in `track_a_*.yaml`. Resolved for the CNS2022 release (ADR 0012): the maps now use the 27 observed CNS2022 labels, see VERIFY V5.
 - If regenerating from PCAP: the labelling script shifts timestamps by `TIME_DIFFERENCE` (the timezone of the machine that ran CICFlowMeter vs New Brunswick). Getting this wrong silently mislabels every attack window.
 
 ## References

@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versio
 - VERIFY V25: Track B extractor version
 
 ### Changed
+- Track A label maps use the 27 raw labels observed in the CNS2022 CSVs (V5), replacing the WTMC 2021 spellings (`DoS Slowloris`, `Web Attack - SQL Injection`, `Portscan`, `Botnet` and Attempted variants). `Infiltration - Portscan` added as ATTACK / PORTSCAN. Attempted labels stay BENIGN
 - Track A schema v0.3.0 describes the published 91-column CNS2022 layout: `id` (identifier) and `Attempted Category` (label side) added, `Total TCP Flow Time` excluded pending V16, six later fork columns removed. 80 model features. Extractor stays `to_verify`, pcapfix and reordercap recorded
 - Both schemas to v0.2.0. Track B's second label column is no longer assumed to be called `Label.1`
 - `check-header` accepts a repeated column only when the schema declares it, and prints the declared renames

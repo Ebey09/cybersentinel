@@ -1,7 +1,9 @@
-# Track A, multi-class by attack family on corrected CIC-IDS2017.
-# Families group dataset labels; every group is traceable to the raw labels below.
+# Track A, multi-class by attack family on the CNS2022 Improved CIC-IDS2017 release (ADR 0012).
+# Keys are the raw Label strings observed in the five CNS2022 CSVs (V5), spelled exactly as in the files.
+# Families are CyberSentinel's grouping; every group is traceable to the raw labels below.
+# '- Attempted' flows map to BENIGN. No Attempted class. Attempted Category is never a target or feature.
 # Classes with fewer than min_class_count TRAINING samples are reported as 'insufficient data'
-# and removed from this task (they stay in the binary task). [VERIFY] counts after download.
+# and removed from this task (they stay in the binary task). [VERIFY] V7/V18 counts.
 experiment_id: track_a_multiclass_family_v0
 track: A
 schema_path: ml/config/schemas/track_a_cicids2017.yaml
@@ -11,38 +13,41 @@ label_column: Label
 label_map:
   BENIGN: BENIGN
   FTP-Patator: CREDENTIAL_BRUTE_FORCE
-  SSH-Patator: CREDENTIAL_BRUTE_FORCE
-  DoS GoldenEye: DOS
-  DoS Hulk: DOS
-  DoS Slowhttptest: DOS
-  DoS slowloris: DOS
-  Heartbleed: HEARTBLEED
-  Web Attack - Brute Force: WEB_ATTACK
-  Web Attack - XSS: WEB_ATTACK
-  Web Attack - Sql Injection: WEB_ATTACK
-  Infiltration: INFILTRATION
-  Bot: BOTNET
-  PortScan: PORTSCAN
-  DDoS: DDOS
   FTP-Patator - Attempted: BENIGN
+  SSH-Patator: CREDENTIAL_BRUTE_FORCE
   SSH-Patator - Attempted: BENIGN
-  DoS GoldenEye - Attempted: BENIGN
+  DoS Hulk: DOS
   DoS Hulk - Attempted: BENIGN
+  DoS GoldenEye: DOS
+  DoS GoldenEye - Attempted: BENIGN
+  DoS Slowloris: DOS
+  DoS Slowloris - Attempted: BENIGN
+  DoS Slowhttptest: DOS
   DoS Slowhttptest - Attempted: BENIGN
-  DoS slowloris - Attempted: BENIGN
-  Heartbleed - Attempted: BENIGN
-  Web Attack - Brute Force - Attempted: BENIGN
+  Heartbleed: HEARTBLEED
+  Web Attack - SQL Injection: WEB_ATTACK
+  Web Attack - SQL Injection - Attempted: BENIGN
+  Web Attack - XSS: WEB_ATTACK
   Web Attack - XSS - Attempted: BENIGN
-  Web Attack - Sql Injection - Attempted: BENIGN
+  Web Attack - Brute Force: WEB_ATTACK
+  Web Attack - Brute Force - Attempted: BENIGN
+  Infiltration: INFILTRATION
   Infiltration - Attempted: BENIGN
-  Bot - Attempted: BENIGN
+  # CyberSentinel taxonomy decision: the CNS2022 documentation places this label under the Infiltration
+  # scenario's "NMAP Portscan" section and describes the activity as a portscanning attack. Grouping it
+  # into PORTSCAN is our choice based on that description; CNS2022 does not define our families.
+  Infiltration - Portscan: PORTSCAN
+  Portscan: PORTSCAN
+  Botnet: BOTNET
+  Botnet - Attempted: BENIGN
+  DDoS: DDOS
   DDoS - Attempted: BENIGN
 class_display:
   BENIGN: Benign
   CREDENTIAL_BRUTE_FORCE: Brute force against FTP/SSH (FTP-Patator, SSH-Patator)
-  DOS: Denial of service (Hulk, GoldenEye, slowloris, Slowhttptest)
+  DOS: Denial of service (Hulk, GoldenEye, Slowloris, Slowhttptest)
   DDOS: Distributed denial of service
-  PORTSCAN: Port scan
+  PORTSCAN: Port scan (includes the Nmap port scans in the Infiltration scenario)
   WEB_ATTACK: Web attack (brute force, XSS, SQL injection)
   BOTNET: Botnet traffic
   INFILTRATION: Infiltration
