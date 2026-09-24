@@ -90,6 +90,12 @@ def cmd_inspect_labels(args: argparse.Namespace) -> int:
         header = next(reader)
         if args.column_index is not None:
             idx = args.column_index
+            # A negative index would silently count from the end; an index past the header would crash later.
+            if not 0 <= idx < len(header):
+                print(
+                    f"column index {idx} is out of range. Header has {len(header)} columns (valid: 0 to {len(header) - 1})"
+                )
+                return 1
         else:
             matches = [i for i, c in enumerate(header) if c == args.column]
             if not matches:

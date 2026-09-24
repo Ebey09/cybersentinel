@@ -5,6 +5,8 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
+import pytest
+
 from cybersentinel_ml.cli import main
 from cybersentinel_ml.contract.schema import FeatureSchema
 
@@ -48,6 +50,14 @@ def test_inspect_labels_refuses_ambiguous_duplicate_column(tmp_path: Path) -> No
     _write_csv(f, ["Label", "Label"], [["Tor", "Chat"]])
     assert main(["inspect-labels", "--csv", str(f), "--column", "Label"]) == 1
     assert main(["inspect-labels", "--csv", str(f), "--column-index", "1"]) == 0
+
+
+@pytest.mark.parametrize("index", ["-1", "2", "99"])
+def test_inspect_labels_rejects_out_of_range_column_index(tmp_path: Path, capsys, index: str) -> None:  # type: ignore[no-untyped-def]
+    f = tmp_path / "labels.csv"
+    _write_csv(f, ["x", "Label"], [["1", "Tor"]])
+    assert main(["inspect-labels", "--csv", str(f), "--column-index", index]) == 1
+    assert "out of range" in capsys.readouterr().out
 
 
 def test_schema_docs_renders(repo_root: Path, tmp_path: Path) -> None:
