@@ -127,3 +127,19 @@ def evaluate(*args):  # type: ignore[no-untyped-def]
     from cybersentinel_ml.contract.gate import evaluate_inference_gate
 
     return evaluate_inference_gate(*args)
+
+
+def test_track_b_with_undocumented_extractor_withholds_csv_and_pcap(schema_b: FeatureSchema) -> None:
+    # ADR 0010: a verified Track B schema supports offline training and evaluation only.
+    data = schema_b.model_dump(mode="json")
+    data["status"] = "verified"
+    data["extractor"]["commit_status"] = "not_documented"
+    for f in data["features"]:
+        f["status"] = "verified"
+    schema = FeatureSchema.model_validate(data)
+    manifest = make_manifest(schema, track="B", task="traffic_type_3class", classes=["TOR", "VPN", "REGULAR"])
+    frame = make_frame(manifest.preprocessing.feature_order)
+    for source in ("csv", "pcap"):
+        d = evaluate(schema, manifest, provenance_for(schema, source), frame)
+        assert not d.allowed
+        assert "extractor_pinned" in _failed(d)

@@ -35,6 +35,16 @@ def test_check_header_ok_and_fail(schema_a: FeatureSchema, tmp_path: Path, repo_
     assert main(["check-header", "--schema", schema_path, "--csv", str(bad)]) == 1
 
 
+def test_check_header_accepts_declared_duplicate_without_renaming(
+    schema_b: FeatureSchema, tmp_path: Path, repo_root: Path, capsys
+) -> None:  # type: ignore[no-untyped-def]
+    schema_path = str(repo_root / "ml/config/schemas/track_b_darknet2020.yaml")
+    raw = tmp_path / "raw.csv"
+    _write_csv(raw, schema_b.expected_raw_header(), [])  # 'Label' twice, as declared
+    assert main(["check-header", "--schema", schema_path, "--csv", str(raw)]) == 0
+    assert "declared rename (applied by the adapter, not here)" in capsys.readouterr().out
+
+
 def test_inspect_labels_reports_unmapped(tmp_path: Path, repo_root: Path, capsys) -> None:  # type: ignore[no-untyped-def]
     f = tmp_path / "labels.csv"
     _write_csv(f, ["x", "Label"], [["1", "Tor"], ["2", "VPN"], ["3", "NonVPN"], ["4", "Tor"]])

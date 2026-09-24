@@ -7,6 +7,7 @@ and discover the next).
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -36,22 +37,32 @@ def all_passed(results: Sequence[CheckResult]) -> bool:
 
 
 def check_raw_header(columns: Sequence[str], schema: FeatureSchema) -> list[CheckResult]:
-    """Compare a CSV header with schema.raw_columns: exact names, exact order.
+    """Compare a CSV header with the schema's expected raw header: exact names, exact order.
 
     No normalisation is applied here on purpose. If a dataset needs renaming or
     whitespace stripping, the dataset adapter must do it explicitly, so the
     difference is visible in code review instead of hidden in a loader.
+    A repeated name passes only if the schema declares it in positional_renames (ADR 0011).
     """
-    expected = list(schema.raw_columns)
+    expected = schema.expected_raw_header()
     actual = list(columns)
     results: list[CheckResult] = []
 
-    dupes = sorted({c for c in actual if actual.count(c) > 1})
+    want, got = Counter(expected), Counter(actual)
+    # A name repeated in the file, or repeated a different number of times than declared.
+    bad_counts = sorted(c for c, n in got.items() if n != want.get(c, 1) and (n > 1 or c in want))
+    declared = sorted(c for c, n in want.items() if n > 1)
+    ok_detail = "no duplicate column names"
+    if declared:
+        ok_detail = f"no undeclared duplicates (declared, resolved by position: {_fmt(declared)})"
     results.append(
         CheckResult(
             "header_no_duplicates",
-            not dupes,
-            "no duplicate column names" if not dupes else f"duplicate columns: {_fmt(dupes)}",
+            not bad_counts,
+            ok_detail
+            if not bad_counts
+            else "duplicate columns: "
+            + ", ".join(f"{c!r} appears {got[c]} times, schema expects {want.get(c, 0)}" for c in bad_counts),
         )
     )
 
@@ -80,7 +91,7 @@ def check_raw_header(columns: Sequence[str], schema: FeatureSchema) -> list[Chec
         )
     )
 
-    if not missing and not unexpected and not dupes:
+    if not missing and not unexpected and not bad_counts:
         first_diff = next((i for i, (a, e) in enumerate(zip(actual, expected, strict=True)) if a != e), None)
         results.append(
             CheckResult(
@@ -95,6 +106,17 @@ def check_raw_header(columns: Sequence[str], schema: FeatureSchema) -> list[Chec
     else:
         results.append(CheckResult("header_order", False, "not checked because column sets differ"))
     return results
+
+
+def resolve_raw_header(columns: Sequence[str], schema: FeatureSchema) -> list[str]:
+    """Apply the schema's declared positional renames and return the resolved header.
+
+    Refuses unless the header is exactly the expected raw header, so a column is never
+    renamed on a guess. Dataset adapters call this after check_raw_header passed.
+    """
+    if list(columns) != schema.expected_raw_header():
+        raise ValueError("header does not match the schema's expected raw header; run check_raw_header")
+    return list(schema.raw_columns)
 
 
 def check_feature_frame(frame: pd.DataFrame, expected_order: Sequence[str]) -> list[CheckResult]:

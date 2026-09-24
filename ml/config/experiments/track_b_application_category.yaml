@@ -1,18 +1,21 @@
-# Track B: application category (8 classes) on CIC-Darknet2020 ('Label.1').
+# Track B: application category (8 classes) on CIC-Darknet2020 (the second label column, see ADR 0011).
 # Describes what kind of application traffic a flow resembles. Not a harm judgement.
-# [VERIFY] exact strings and casing. If the CSV has casing variants (for example two spellings
-# of one category), list each variant explicitly here so the merge is visible in review.
+# [VERIFY] V6: every key below is a placeholder until inspect-labels shows the exact raw strings and casing.
+# If the CSV has casing variants (for example two spellings of one category), list each variant
+# explicitly here so the merge is visible in review.
 experiment_id: track_b_application_category_v0
 track: B
 schema_path: ml/config/schemas/track_b_darknet2020.yaml
 task: application_category
 seed: 42
-label_column: Label.1
+label_column: Label (column 84)
 label_map:
   Audio-Streaming: AUDIO_STREAMING
   Browsing: BROWSING
   Chat: CHAT
   Email: EMAIL
+  # [VERIFY] V6: raw spelling unknown. The docs and literature disagree ('File Transfer' vs 'File-Transfer').
+  # unknown_label_policy: fail stops training if this key does not match the CSV exactly.
   File-Transfer: FILE_TRANSFER
   P2P: P2P
   Video-Streaming: VIDEO_STREAMING

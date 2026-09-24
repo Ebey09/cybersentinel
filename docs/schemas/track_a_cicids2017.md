@@ -2,10 +2,10 @@
 
 > Generated from the schema YAML by `cybersentinel-ml schema-docs`. Do not edit by hand.
 
-- Schema: `track_a.cicids2017_corrected` v0.1.0 (status: **draft**)
-- Content SHA-256: `18851f42f82f83dda2e21c2db73ce7e64d23f96476adec2ca687dc91433bc427`
+- Schema: `track_a.cicids2017_corrected` v0.2.0 (status: **draft**)
+- Content SHA-256: `65d41f6f5d3383fdc30ab3825eb9940d5377d66142e95bd43412396974779034`
 - Dataset: CIC-IDS2017, corrected by Engelen et al. (WTMC 2021)
-- Extractor: CICFlowMeter (Engelen et al. fork), commit `[VERIFY] pin the exact commit used to build the extractor image`
+- Extractor: CICFlowMeter (Engelen et al. fork), commit `[VERIFY] pin the exact commit used to build the extractor image` (commit status: **to_verify**)
 - Flow timeout: 120000000 us, activity timeout: 5000000 us
 - PCAP parity: **not_demonstrated**
 - Preprocessing version: 0.1.0

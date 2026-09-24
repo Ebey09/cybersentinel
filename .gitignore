@@ -12,9 +12,11 @@ data/processed/*
 data/uploads/*
 !data/**/.gitkeep
 *.pcap
+*.PCAP
 *.pcapng
 *.cap
 *.parquet
+*.zip
 models/*
 !models/README.md
 ml/runs/
