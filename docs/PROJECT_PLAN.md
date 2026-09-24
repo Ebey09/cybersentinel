@@ -166,10 +166,12 @@ sequenceDiagram
 
 ## 3. Complete folder structure
 
+Status as of Phase 1. Paths with no status marker are committed now. Paths marked **(planned)** do not exist yet. Folders marked **(placeholder)** only contain a README for now.
+
 ```
 cybersentinel/
 ├── .github/
-│   ├── workflows/
+│   ├── workflows/                  # (planned) CI is added in a later phase
 │   │   ├── ci.yml                  # lint, type-check, tests (backend, ml, frontend)
 │   │   └── security.yml            # CodeQL, pip-audit, npm audit, gitleaks, Trivy
 │   ├── dependabot.yml
@@ -178,14 +180,15 @@ cybersentinel/
 │   │   └── feature_request.md
 │   └── pull_request_template.md
 │
-├── backend/
-│   ├── pyproject.toml
-│   ├── uv.lock
-│   ├── alembic.ini
-│   ├── alembic/
+├── backend/                        # (placeholder) Phases 2-3
+│   ├── README.md
+│   ├── pyproject.toml              # (planned)
+│   ├── uv.lock                     # (planned)
+│   ├── alembic.ini                 # (planned)
+│   ├── alembic/                    # (planned)
 │   │   ├── env.py
 │   │   └── versions/
-│   ├── app/
+│   ├── app/                        # (planned)
 │   │   ├── main.py                 # app factory, middleware, routers
 │   │   ├── core/
 │   │   │   ├── config.py           # pydantic-settings, reads env vars only
@@ -227,7 +230,7 @@ cybersentinel/
 │   │   │   └── jobs.py
 │   │   └── templates/reports/
 │   │       └── report.html.j2
-│   └── tests/
+│   └── tests/                      # (planned)
 │       ├── conftest.py
 │       ├── unit/
 │       └── integration/
@@ -247,116 +250,55 @@ cybersentinel/
 │   │   │   └── track_b_application_category.yaml
 │   │   └── datasets.yaml           # sources, citations, terms, checksums
 │   ├── src/cybersentinel_ml/
-│   │   ├── contract/               # Phase 1: schema, manifests, validation, inference gate
+│   │   ├── __init__.py
 │   │   ├── cli.py                  # Phase 1: validate-config, check-header, inspect-labels, schema-docs
-│   │   ├── datasets/               # Phase 4: one adapter per dataset
-│   │   ├── preprocessing/          # Phase 4: cleaning, splits, fitted preprocessing
-│   │   ├── training/               # Phase 5
-│   │   ├── evaluation/             # Phase 5: metrics, plots, latency, leakage checks
-│   │   ├── explain/                # Phase 7: SHAP + analyst text
-│   │   ├── inference/              # Phase 5/8: artifact store (hash check), predictor, OOD warning
-│   │   └── extraction/             # Phase 4b: pinned extractor wrapper, parity test
-│   ├── results/                    # committed: metrics JSON + plots + parity evidence
-│   ├── notebooks/                  # EDA only, never part of the pipeline
-│   └── tests/
-│
-├── models/                 # SQLAlchemy ORM models (one file per table group)
-│   │   ├── schemas/                # Pydantic request/response models
-│   │   ├── api/
-│   │   │   ├── deps.py             # get_db, get_current_user, require_role
-│   │   │   └── v1/
-│   │   │       ├── auth.py
-│   │   │       ├── users.py
-│   │   │       ├── uploads.py
-│   │   │       ├── flows.py
-│   │   │       ├── models.py
-│   │   │       ├── dashboard.py
-│   │   │       ├── alerts.py
-│   │   │       ├── reports.py
-│   │   │       └── health.py
-│   │   ├── services/
-│   │   │   ├── file_validation.py
-│   │   │   ├── upload_service.py
-│   │   │   ├── analysis_service.py
-│   │   │   ├── explanation_service.py   # SHAP + analyst-language templates
-│   │   │   ├── dashboard_service.py
-│   │   │   ├── report_service.py
-│   │   │   ├── audit_service.py
-│   │   │   └── alert_engine/
-│   │   │       ├── engine.py
-│   │   │       ├── rules/              # one module per rule
-│   │   │       └── rules.yaml          # thresholds, severities, actions
-│   │   ├── worker/
-│   │   │   ├── runner.py           # job loop
-│   │   │   └── jobs.py
-│   │   └── templates/reports/
-│   │       └── report.html.j2
-│   └── tests/
+│   │   ├── contract/               # Phase 1: schema, manifests, validation, inference gate
+│   │   │   ├── __init__.py
+│   │   │   ├── experiment.py
+│   │   │   ├── gate.py
+│   │   │   ├── manifest.py
+│   │   │   ├── schema.py
+│   │   │   └── validation.py
+│   │   ├── datasets/               # (planned) Phase 4: one adapter per dataset
+│   │   ├── preprocessing/          # (planned) Phase 4: cleaning, splits, fitted preprocessing
+│   │   ├── training/               # (planned) Phase 5
+│   │   ├── evaluation/             # (planned) Phase 5: metrics, plots, latency, leakage checks
+│   │   ├── explain/                # (planned) Phase 7: SHAP + analyst text
+│   │   ├── inference/              # (planned) Phase 5/8: artifact store (hash check), predictor, OOD warning
+│   │   └── extraction/             # (planned) Phase 4b: pinned extractor wrapper, parity test
+│   ├── results/                    # (placeholder) committed: metrics JSON + plots + parity evidence
+│   │   └── README.md
+│   ├── notebooks/                  # (planned) EDA only, never part of the pipeline
+│   └── tests/                      # contract tests on synthetic data
+│       ├── __init__.py
 │       ├── conftest.py
-│       ├── unit/
-│       └── integration/
-│
-├── ml/
-│   ├── pyproject.toml              # installable package: cybersentinel_ml
-│   ├── uv.lock
-│   ├── cybersentinel_ml/
-│   │   ├── schema/
-│   │   │   └── canonical_features.py
-│   │   ├── datasets/
-│   │   │   ├── base.py             # DatasetAdapter abstract class
-│   │   │   ├── registry.py
-│   │   │   ├── cic_ids2017.py
-│   │   │   ├── cic_darknet2020.py
-│   │   │   └── cicflowmeter_csv.py # generic uploads in CICFlowMeter format
-│   │   ├── preprocessing/
-│   │   │   ├── cleaning.py         # inf/NaN, duplicates, constant columns
-│   │   │   ├── splits.py
-│   │   │   └── pipeline.py
-│   │   ├── models/
-│   │   │   ├── baselines.py        # LR, RF, XGB factories
-│   │   │   ├── mlp.py              # optional (Phase 6)
-│   │   │   └── calibration.py
-│   │   ├── training/train.py
-│   │   ├── evaluation/
-│   │   │   ├── metrics.py
-│   │   │   ├── plots.py
-│   │   │   └── benchmark.py        # latency, model size
-│   │   ├── explain/
-│   │   │   ├── shap_explainer.py
-│   │   │   ├── global_importance.py
-│   │   │   └── feature_glossary.yaml   # analyst-friendly descriptions per feature
-│   │   ├── inference/
-│   │   │   ├── predictor.py
-│   │   │   ├── ood.py              # out-of-distribution warning
-│   │   │   └── artifact_store.py   # manifest + SHA-256 verification
-│   │   └── extraction/
-│   │       ├── pcap_to_flows.py
-│   │       └── parity_check.py
-│   ├── configs/                    # one YAML per experiment
-│   │   ├── ids2017_binary_xgb.yaml
-│   │   ├── ids2017_multiclass_xgb.yaml
-│   │   └── darknet_traffic_type_xgb.yaml
-│   ├── results/                    # committed: metrics JSON + plots (small files)
-│   ├── notebooks/                  # EDA only, never part of the pipeline
-│   └── tests/
+│       ├── test_cli.py
+│       ├── test_experiments.py
+│       ├── test_gate.py
+│       ├── test_manifest.py
+│       ├── test_schema_files.py
+│       └── test_validation.py
 │
 ├── models/                         # gitignored binaries; only README + model cards committed
 │   └── README.md
 │
 ├── data/
 │   ├── README.md                   # download steps, checksums, licenses, citations
-│   ├── raw/                        # gitignored
-│   ├── processed/                  # gitignored
+│   ├── raw/                        # gitignored (.gitkeep only)
+│   ├── interim/                    # gitignored (.gitkeep only)
+│   ├── processed/                  # gitignored (.gitkeep only)
 │   ├── fixtures/                   # small SYNTHETIC files for tests (no real dataset rows)
-│   └── threat_intel/
+│   │   └── README.md
+│   └── threat_intel/               # (planned)
 │       └── sample_blocklist.csv
 │
-├── frontend/
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── vite.config.ts
-│   ├── tsconfig.json
-│   └── src/
+├── frontend/                       # (placeholder) Phases 9-10
+│   ├── README.md
+│   ├── package.json                # (planned)
+│   ├── package-lock.json           # (planned)
+│   ├── vite.config.ts              # (planned)
+│   ├── tsconfig.json               # (planned)
+│   └── src/                        # (planned)
 │       ├── main.tsx
 │       ├── App.tsx
 │       ├── api/                    # generated types + fetch client
@@ -370,20 +312,23 @@ cybersentinel/
 │       ├── hooks/
 │       └── lib/
 │
-├── docker/
-│   ├── backend.Dockerfile          # used by api and worker (different command)
-│   ├── frontend.Dockerfile         # multi-stage: build, then nginx
-│   ├── extractor.Dockerfile
-│   └── nginx/nginx.conf
+├── docker/                         # (placeholder) Phases 4b and 13
+│   ├── README.md
+│   ├── backend.Dockerfile          # (planned) used by api and worker (different command)
+│   ├── frontend.Dockerfile         # (planned) multi-stage: build, then nginx
+│   ├── extractor.Dockerfile        # (planned)
+│   └── nginx/nginx.conf            # (planned)
 │
-├── scripts/
-│   ├── download_datasets.md        # manual steps (CIC requires a form) + checksum verify
-│   ├── verify_checksums.py
-│   ├── create_admin.py             # reads password from prompt, never from argv
-│   └── generate_api_types.sh
+├── scripts/                        # (placeholder)
+│   ├── README.md
+│   ├── download_datasets.md        # (planned) manual steps (CIC requires a form) + checksum verify
+│   ├── verify_checksums.py         # (planned)
+│   ├── create_admin.py             # (planned) reads password from prompt, never from argv
+│   └── generate_api_types.sh       # (planned)
 │
 ├── tests/
-│   └── e2e/                        # Playwright, runs against docker compose
+│   └── e2e/                        # (placeholder) Playwright, runs against docker compose
+│       └── README.md
 │
 ├── docs/
 │   ├── README.md                   # index of docs and their status
@@ -393,19 +338,21 @@ cybersentinel/
 │   ├── ML_PIPELINE.md              # Phase 1 design, filled in Phases 4-7
 │   ├── VERIFY.md                   # open verification items
 │   ├── schemas/                    # generated from the schema YAMLs
-│   ├── adr/                        # Architecture Decision Records 0001-0009 (more later)
-│   ├── ARCHITECTURE.md             # later phases
-│   ├── XAI.md                      # Phase 7
-│   ├── API.md                      # Phase 2+
-│   ├── DATABASE.md                 # Phase 3
-│   ├── SECURITY_ARCHITECTURE.md    # Phase 3/12
-│   ├── THREAT_MODEL.md             # Phase 12, STRIDE
-│   ├── TESTING.md                  # Phase 12
-│   └── screenshots/
+│   │   ├── track_a_cicids2017.md
+│   │   └── track_b_darknet2020.md
+│   ├── adr/                        # Architecture Decision Records 0001-0009 (more later) + README index
+│   ├── ARCHITECTURE.md             # (planned) later phases
+│   ├── XAI.md                      # (planned) Phase 7
+│   ├── API.md                      # (planned) Phase 2+
+│   ├── DATABASE.md                 # (planned) Phase 3
+│   ├── SECURITY_ARCHITECTURE.md    # (planned) Phase 3/12
+│   ├── THREAT_MODEL.md             # (planned) Phase 12, STRIDE
+│   ├── TESTING.md                  # (planned) Phase 12
+│   └── screenshots/                # (planned)
 │
-├── docker-compose.yml
-├── docker-compose.dev.yml
-├── Makefile                        # make dev, make test, make train, make lint
+├── docker-compose.yml              # (planned)
+├── docker-compose.dev.yml          # (planned)
+├── Makefile                        # make setup, make lint, make test, make validate (make help lists all)
 ├── .pre-commit-config.yaml
 ├── .editorconfig
 ├── .env.example
