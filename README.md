@@ -52,7 +52,7 @@ The data contract, in `ml/`:
 - Experiment configs with explicit label maps and display text (`ml/config/experiments/`)
 - Validation code: schema consistency rules, header checks, feature name/order/dtype checks, model and preprocessing manifests, and a **fail-closed inference gate**
 - A CLI to check real dataset files against the schemas
-- 66 tests on synthetic data
+- 67 tests on synthetic data
 
 ```bash
 cd ml

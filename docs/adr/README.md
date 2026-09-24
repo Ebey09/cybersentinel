@@ -17,3 +17,4 @@ A superseded ADR is kept and marked, never deleted.
 | [0009](0009-ml-first-build-order.md) | Build and validate the ML pipeline before the web application | Accepted |
 | [0010](0010-undocumented-extractor-provenance.md) | A dataset whose extractor version is not documented can be verified, but never used for inference | Accepted |
 | [0011](0011-explicit-positional-renames-for-ambiguous-headers.md) | Ambiguous raw column names are resolved by declared positional renames, never silently | Accepted |
+| [0012](0012-use-published-cns2022-release.md) | Use the published CNS2022 Improved CIC-IDS2017 release, with its extractor commit recorded as unknown | Accepted |

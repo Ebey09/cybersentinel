@@ -46,7 +46,7 @@ def test_tracks_have_separate_schemas(schema_a: FeatureSchema, schema_b: Feature
     assert schema_a.extractor.repository != schema_b.extractor.repository
     # The Engelen fork emits columns the upstream tool does not.
     fork_only = set(schema_a.raw_columns) - set(schema_b.raw_columns)
-    assert {"Fwd RST Flags", "Bwd RST Flags", "Bwd Act Data Pkts"} <= fork_only
+    assert {"Fwd RST Flags", "Bwd RST Flags", "ICMP Code"} <= fork_only
 
 
 def test_track_b_excludes_features_affected_by_upstream_bugs(schema_b: FeatureSchema) -> None:
@@ -139,3 +139,25 @@ def test_positional_rename_must_point_at_its_resolved_name(schema_b: FeatureSche
     data["positional_renames"][0]["position"] = 0  # raw_columns[0] is 'Flow ID', not the resolved name
     with pytest.raises(ValueError, match="must be the resolved name"):
         FeatureSchema.model_validate(data)
+
+
+def test_track_a_matches_the_published_cns2022_layout(schema_a: FeatureSchema) -> None:
+    # ADR 0012: the schema describes CICIDS2017_improved.zip as published (91 columns).
+    assert len(schema_a.raw_columns) == 91
+    assert schema_a.raw_columns[0] == "id"
+    assert schema_a.raw_columns[-3:] == ["Total TCP Flow Time", "Label", "Attempted Category"]
+    later_fork_columns = {
+        "Bwd Act Data Pkts",
+        "Bwd Seg Size Min",
+        "Fwd TCP Retrans. Count",
+        "Bwd TCP Retrans. Count",
+        "Total TCP Retrans. Count",
+        "Total Connection Flow Time",
+    }
+    assert not later_fork_columns & set(schema_a.raw_columns)
+    # Columns added by the labelling notebook, and the undefined duration field, are never model inputs.
+    inputs = {f.source_column for f in schema_a.features}
+    assert not {"id", "Attempted Category", "Total TCP Flow Time", "Label"} & inputs
+    # The generation commit is not documented, so it must not look pinned.
+    assert schema_a.extractor.commit_status == "to_verify"
+    assert not schema_a.extractor.is_pinned

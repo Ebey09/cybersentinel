@@ -1,30 +1,38 @@
 # Feature schema: Track A (attack detection, corrected CIC-IDS2017)
 # Source of truth for training AND inference. Validated by cybersentinel_ml.contract.
 # status: draft -> training and inference refuse to run until it is 'verified'.
-# Column list taken from FlowFeature.java in github.com/GintsEngelen/CICFlowMeter (master, 94 columns incl. Label).
+# Column list: the published CNS2022 'Improved CIC-IDS2017' CSVs (CICIDS2017_improved.zip), 91 columns, observed locally
+# in all five day files. 'id' and 'Attempted Category' are added by the CNS2022 labelling notebook (ADR 0012).
 
 schema_id: track_a.cicids2017_corrected
-schema_version: 0.2.0
+schema_version: 0.3.0
 status: draft
 track: A
 title: 'Track A: Attack detection (corrected CIC-IDS2017)'
 dataset:
-  name: CIC-IDS2017, corrected by Engelen et al. (WTMC 2021)
-  homepage: https://www.unb.ca/cic/datasets/ids-2017.html
-  correction: https://github.com/GintsEngelen/WTMC2021-Code
-  release: '[VERIFY] which corrected release is used (WTMC 2021 labelling, or CNS 2022 improved version) and where
-    the CSVs come from'
+  name: CNS2022 Improved CIC-IDS2017 (Liu, Engelen et al.)
+  homepage: https://intrusion-detection.distrinet-research.be/CNS2022/
+  correction: https://github.com/GintsEngelen/CNS2022_Code
+  release: 'Published CSV release CICIDS2017_improved.zip (monday.csv to friday.csv, 91 columns), from
+    https://intrusion-detection.distrinet-research.be/CNS2022/Datasets/. Labelled with
+    Labelling/CICIDS2017_labelling_fixed_CICFlowMeter.ipynb; the notebook revision used for the release is not documented
+    (known repository revision 7f862bf6f9dcd5b327dfeaff0d68ff29256fb871, not confirmed as the release revision). ADR 0012.'
 extractor:
   name: CICFlowMeter (Engelen et al. fork)
   repository: https://github.com/GintsEngelen/CICFlowMeter
-  commit: '[VERIFY] pin the exact commit used to build the extractor image'
+  commit: '[VERIFY] Author tool identified, exact generation commit not published/documented. Do not infer it.'
   commit_status: to_verify
   flow_timeout_us: 120000000
   activity_timeout_us: 5000000
-  pcap_preprocessing: []
-  known_header_columns: 94
-  notes: Timeouts are the defaults stated in the Engelen READMEs. The CNS 2022 pipeline also ran pcapfix and reordercap
-    before extraction; add them here if that release is used.
+  pcap_preprocessing:
+  - pcapfix
+  - reordercap
+  known_header_columns: 89
+  notes: 'Settings as documented by CNS2022: offline mode, flow timeout 120000000 us, activity timeout 5000000 us, pcapfix
+    then reordercap. The CNS2022 authors identify their modified GintsEngelen/CICFlowMeter and document its fixes, but the
+    exact Git commit used to generate CICIDS2017_improved.zip is not specified in the author materials inspected, so it is
+    recorded as unknown rather than inferred (ADR 0012). known_header_columns = 91 file columns minus the two added by the
+    labelling notebook (id, Attempted Category).'
 parity:
   status: not_demonstrated
   evidence: null
@@ -32,6 +40,7 @@ parity:
   - pcap_inference
   test: docs/adr/0006-pcap-feature-parity-is-mandatory.md
 raw_columns:
+- id
 - Flow ID
 - Src IP
 - Src Port
@@ -108,9 +117,7 @@ raw_columns:
 - FWD Init Win Bytes
 - Bwd Init Win Bytes
 - Fwd Act Data Pkts
-- Bwd Act Data Pkts
 - Fwd Seg Size Min
-- Bwd Seg Size Min
 - Active Mean
 - Active Std
 - Active Max
@@ -121,11 +128,9 @@ raw_columns:
 - Idle Min
 - ICMP Code
 - ICMP Type
-- Fwd TCP Retrans. Count
-- Bwd TCP Retrans. Count
-- Total TCP Retrans. Count
-- Total Connection Flow Time
+- Total TCP Flow Time
 - Label
+- Attempted Category
 identifier_columns:
 - name: flow_id
   source_column: Flow ID
@@ -174,10 +179,27 @@ identifier_columns:
   model_input: false
   reason: Labels were assigned by time window, so time is a direct label proxy. Kept for display, related-flow lookup
     and timelines only.
+- name: row_id
+  source_column: id
+  dtype: int64
+  used_for:
+  - display
+  - related_flows
+  model_input: false
+  reason: Row number written by the CNS2022 labelling notebook (print_index), not a CICFlowMeter feature. It follows file
+    order, which follows time, so it would act as a label proxy.
 label_columns:
 - source_column: Label
   name: label
-  known_values_source: WTMC2021-Code labelling_CSV_flows.py and MakeDataNumpyFriendly.py
+  notes: '[VERIFY] V5: exact label strings in the CNS2022 release. Attempted flows keep their own label string and map to
+    BENIGN in the experiments (ADR 0004); there is no separate Attempted class.'
+  known_values_source: WTMC2021-Code labelling_CSV_flows.py and MakeDataNumpyFriendly.py (not yet checked against the
+    CNS2022 release)
+- source_column: Attempted Category
+  name: attempted_category
+  notes: Label-side metadata added by the CNS2022 labelling notebook (default -1, set per labelled attempt). Derived from
+    the labelling itself, so it is never a model input and never a training target. Category definitions are on the
+    CNS2022 Tools_Documentation page.
 features:
 - name: dst_port
   source_column: Dst Port
@@ -198,7 +220,7 @@ features:
   notes: Kept for tree models only (a port number is not a linear quantity). Every experiment also runs a no-port
     ablation to detect port shortcut learning.
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: protocol
   source_column: Protocol
   dtype: int64
@@ -217,7 +239,7 @@ features:
   status: draft
   notes: '[VERIFY] observed protocol values in the real CSV (CICFlowMeter may emit 0 for non-TCP/UDP).'
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
   categories:
   - 6
   - 17
@@ -240,7 +262,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_packets_total
   source_column: Total Fwd Packet
   dtype: float64
@@ -259,7 +281,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_packets_total
   source_column: Total Bwd packets
   dtype: float64
@@ -278,7 +300,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_payload_bytes_total
   source_column: Total Length of Fwd Packet
   dtype: float64
@@ -299,7 +321,7 @@ features:
     when this value is 0. With Attempted mapped to BENIGN, this feature partly encodes the labelling rule. Reported
     in the evaluation, see docs/adr/0004.'
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_payload_bytes_total
   source_column: Total Length of Bwd Packet
   dtype: float64
@@ -318,7 +340,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_pkt_len_max
   source_column: Fwd Packet Length Max
   dtype: float64
@@ -337,7 +359,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_pkt_len_min
   source_column: Fwd Packet Length Min
   dtype: float64
@@ -356,7 +378,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_pkt_len_mean
   source_column: Fwd Packet Length Mean
   dtype: float64
@@ -375,7 +397,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_pkt_len_std
   source_column: Fwd Packet Length Std
   dtype: float64
@@ -394,7 +416,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_pkt_len_max
   source_column: Bwd Packet Length Max
   dtype: float64
@@ -413,7 +435,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_pkt_len_min
   source_column: Bwd Packet Length Min
   dtype: float64
@@ -432,7 +454,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_pkt_len_mean
   source_column: Bwd Packet Length Mean
   dtype: float64
@@ -451,7 +473,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_pkt_len_std
   source_column: Bwd Packet Length Std
   dtype: float64
@@ -470,7 +492,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: flow_bytes_per_s
   source_column: Flow Bytes/s
   dtype: float64
@@ -489,7 +511,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: flow_packets_per_s
   source_column: Flow Packets/s
   dtype: float64
@@ -508,7 +530,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: flow_iat_mean
   source_column: Flow IAT Mean
   dtype: float64
@@ -527,7 +549,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: flow_iat_std
   source_column: Flow IAT Std
   dtype: float64
@@ -546,7 +568,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: flow_iat_max
   source_column: Flow IAT Max
   dtype: float64
@@ -565,7 +587,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: flow_iat_min
   source_column: Flow IAT Min
   dtype: float64
@@ -584,7 +606,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_iat_total
   source_column: Fwd IAT Total
   dtype: float64
@@ -603,7 +625,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_iat_mean
   source_column: Fwd IAT Mean
   dtype: float64
@@ -622,7 +644,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_iat_std
   source_column: Fwd IAT Std
   dtype: float64
@@ -641,7 +663,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_iat_max
   source_column: Fwd IAT Max
   dtype: float64
@@ -660,7 +682,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_iat_min
   source_column: Fwd IAT Min
   dtype: float64
@@ -679,7 +701,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_iat_total
   source_column: Bwd IAT Total
   dtype: float64
@@ -698,7 +720,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_iat_mean
   source_column: Bwd IAT Mean
   dtype: float64
@@ -717,7 +739,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_iat_std
   source_column: Bwd IAT Std
   dtype: float64
@@ -736,7 +758,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_iat_max
   source_column: Bwd IAT Max
   dtype: float64
@@ -755,7 +777,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_iat_min
   source_column: Bwd IAT Min
   dtype: float64
@@ -774,7 +796,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_psh_flags
   source_column: Fwd PSH Flags
   dtype: float64
@@ -793,7 +815,7 @@ features:
   status: draft
   notes: Correctly incremented in the Engelen fork (bug fix listed in the fork README).
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_psh_flags
   source_column: Bwd PSH Flags
   dtype: float64
@@ -812,7 +834,7 @@ features:
   status: draft
   notes: Correctly incremented in the Engelen fork (bug fix listed in the fork README).
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_urg_flags
   source_column: Fwd URG Flags
   dtype: float64
@@ -831,7 +853,7 @@ features:
   status: draft
   notes: Correctly incremented in the Engelen fork (bug fix listed in the fork README).
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_urg_flags
   source_column: Bwd URG Flags
   dtype: float64
@@ -850,7 +872,7 @@ features:
   status: draft
   notes: Correctly incremented in the Engelen fork (bug fix listed in the fork README).
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_rst_flags
   source_column: Fwd RST Flags
   dtype: float64
@@ -869,7 +891,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_rst_flags
   source_column: Bwd RST Flags
   dtype: float64
@@ -888,7 +910,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_header_bytes_total
   source_column: Fwd Header Length
   dtype: float64
@@ -907,7 +929,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_header_bytes_total
   source_column: Bwd Header Length
   dtype: float64
@@ -926,7 +948,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_packets_per_s
   source_column: Fwd Packets/s
   dtype: float64
@@ -945,7 +967,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_packets_per_s
   source_column: Bwd Packets/s
   dtype: float64
@@ -964,7 +986,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: pkt_len_min
   source_column: Packet Length Min
   dtype: float64
@@ -983,7 +1005,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: pkt_len_max
   source_column: Packet Length Max
   dtype: float64
@@ -1002,7 +1024,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: pkt_len_mean
   source_column: Packet Length Mean
   dtype: float64
@@ -1021,7 +1043,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: pkt_len_std
   source_column: Packet Length Std
   dtype: float64
@@ -1040,7 +1062,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: pkt_len_var
   source_column: Packet Length Variance
   dtype: float64
@@ -1059,7 +1081,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fin_flag_count
   source_column: FIN Flag Count
   dtype: float64
@@ -1078,7 +1100,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: syn_flag_count
   source_column: SYN Flag Count
   dtype: float64
@@ -1097,7 +1119,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: rst_flag_count
   source_column: RST Flag Count
   dtype: float64
@@ -1116,7 +1138,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: psh_flag_count
   source_column: PSH Flag Count
   dtype: float64
@@ -1135,7 +1157,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: ack_flag_count
   source_column: ACK Flag Count
   dtype: float64
@@ -1154,7 +1176,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: urg_flag_count
   source_column: URG Flag Count
   dtype: float64
@@ -1173,7 +1195,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: cwr_flag_count
   source_column: CWR Flag Count
   dtype: float64
@@ -1192,7 +1214,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: ece_flag_count
   source_column: ECE Flag Count
   dtype: float64
@@ -1211,7 +1233,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: down_up_ratio
   source_column: Down/Up Ratio
   dtype: float64
@@ -1230,7 +1252,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: avg_packet_size
   source_column: Average Packet Size
   dtype: float64
@@ -1249,7 +1271,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_segment_size_avg
   source_column: Fwd Segment Size Avg
   dtype: float64
@@ -1268,7 +1290,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_segment_size_avg
   source_column: Bwd Segment Size Avg
   dtype: float64
@@ -1287,7 +1309,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_bytes_per_bulk_avg
   source_column: Fwd Bytes/Bulk Avg
   dtype: float64
@@ -1306,7 +1328,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_packets_per_bulk_avg
   source_column: Fwd Packet/Bulk Avg
   dtype: float64
@@ -1325,7 +1347,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_bulk_rate_avg
   source_column: Fwd Bulk Rate Avg
   dtype: float64
@@ -1344,7 +1366,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_bytes_per_bulk_avg
   source_column: Bwd Bytes/Bulk Avg
   dtype: float64
@@ -1363,7 +1385,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_packets_per_bulk_avg
   source_column: Bwd Packet/Bulk Avg
   dtype: float64
@@ -1382,7 +1404,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_bulk_rate_avg
   source_column: Bwd Bulk Rate Avg
   dtype: float64
@@ -1401,7 +1423,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: subflow_fwd_packets
   source_column: Subflow Fwd Packets
   dtype: float64
@@ -1420,7 +1442,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: subflow_fwd_bytes
   source_column: Subflow Fwd Bytes
   dtype: float64
@@ -1439,7 +1461,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: subflow_bwd_packets
   source_column: Subflow Bwd Packets
   dtype: float64
@@ -1458,7 +1480,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: subflow_bwd_bytes
   source_column: Subflow Bwd Bytes
   dtype: float64
@@ -1477,7 +1499,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_init_win_bytes
   source_column: FWD Init Win Bytes
   dtype: float64
@@ -1497,7 +1519,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: bwd_init_win_bytes
   source_column: Bwd Init Win Bytes
   dtype: float64
@@ -1517,7 +1539,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_active_data_packets
   source_column: Fwd Act Data Pkts
   dtype: float64
@@ -1536,26 +1558,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
-- name: bwd_active_data_packets
-  source_column: Bwd Act Data Pkts
-  dtype: float64
-  unit: packets
-  group: volume
-  meaning: Backward packets carrying at least 1 byte of payload.
-  expected_range:
-    min: 0
-    max: null
-  missing_values: inf_to_nan_then_train_median
-  scaling:
-    logistic_regression: signed_log1p_then_standard
-    tree_models: none
-  encoding: numeric
-  included: true
-  status: draft
-  notes: null
-  pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: fwd_seg_size_min
   source_column: Fwd Seg Size Min
   dtype: float64
@@ -1575,26 +1578,7 @@ features:
   status: draft
   notes: null
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
-- name: bwd_seg_size_min
-  source_column: Bwd Seg Size Min
-  dtype: float64
-  unit: bytes
-  group: packet_size
-  meaning: Minimum backward segment size. [VERIFY] exact definition in BasicFlow source.
-  expected_range:
-    min: 0
-    max: null
-  missing_values: inf_to_nan_then_train_median
-  scaling:
-    logistic_regression: signed_log1p_then_standard
-    tree_models: none
-  encoding: numeric
-  included: true
-  status: draft
-  notes: null
-  pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: active_mean
   source_column: Active Mean
   dtype: float64
@@ -1613,7 +1597,7 @@ features:
   status: draft
   notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: active_std
   source_column: Active Std
   dtype: float64
@@ -1632,7 +1616,7 @@ features:
   status: draft
   notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: active_max
   source_column: Active Max
   dtype: float64
@@ -1651,7 +1635,7 @@ features:
   status: draft
   notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: active_min
   source_column: Active Min
   dtype: float64
@@ -1670,7 +1654,7 @@ features:
   status: draft
   notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: idle_mean
   source_column: Idle Mean
   dtype: float64
@@ -1689,7 +1673,7 @@ features:
   status: draft
   notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: idle_std
   source_column: Idle Std
   dtype: float64
@@ -1708,7 +1692,7 @@ features:
   status: draft
   notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: idle_max
   source_column: Idle Max
   dtype: float64
@@ -1727,7 +1711,7 @@ features:
   status: draft
   notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: idle_min
   source_column: Idle Min
   dtype: float64
@@ -1746,64 +1730,7 @@ features:
   status: draft
   notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
-- name: fwd_tcp_retrans_count
-  source_column: Fwd TCP Retrans. Count
-  dtype: float64
-  unit: count
-  group: tcp_retrans
-  meaning: TCP retransmissions detected in the forward direction.
-  expected_range:
-    min: 0
-    max: null
-  missing_values: inf_to_nan_then_train_median
-  scaling:
-    logistic_regression: signed_log1p_then_standard
-    tree_models: none
-  encoding: numeric
-  included: true
-  status: draft
-  notes: null
-  pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
-- name: bwd_tcp_retrans_count
-  source_column: Bwd TCP Retrans. Count
-  dtype: float64
-  unit: count
-  group: tcp_retrans
-  meaning: TCP retransmissions detected in the backward direction.
-  expected_range:
-    min: 0
-    max: null
-  missing_values: inf_to_nan_then_train_median
-  scaling:
-    logistic_regression: signed_log1p_then_standard
-    tree_models: none
-  encoding: numeric
-  included: true
-  status: draft
-  notes: null
-  pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
-- name: total_tcp_retrans_count
-  source_column: Total TCP Retrans. Count
-  dtype: float64
-  unit: count
-  group: tcp_retrans
-  meaning: TCP retransmissions, both directions.
-  expected_range:
-    min: 0
-    max: null
-  missing_values: inf_to_nan_then_train_median
-  scaling:
-    logistic_regression: signed_log1p_then_standard
-    tree_models: none
-  encoding: numeric
-  included: true
-  status: draft
-  notes: null
-  pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 excluded_features:
 - name: icmp_code
   source_column: ICMP Code
@@ -1823,7 +1750,7 @@ excluded_features:
   status: draft
   notes: Excluded until the non-ICMP sentinel value and encoding are confirmed in EDA.
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 - name: icmp_type
   source_column: ICMP Type
   dtype: float64
@@ -1842,13 +1769,13 @@ excluded_features:
   status: draft
   notes: Excluded until the non-ICMP sentinel value and encoding are confirmed in EDA.
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
-- name: total_connection_flow_time
-  source_column: Total Connection Flow Time
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
+- name: total_tcp_flow_time
+  source_column: Total TCP Flow Time
   dtype: float64
   unit: null
   group: unknown
-  meaning: '[VERIFY] Added in the Engelen fork. Exact definition and unit not yet confirmed from source.'
+  meaning: '[VERIFY] V16. TCP flow duration field of the Engelen fork. Exact definition and unit not yet confirmed.'
   expected_range:
     min: null
     max: null
@@ -1859,9 +1786,10 @@ excluded_features:
   encoding: numeric
   included: false
   status: draft
-  notes: Excluded until its definition is confirmed from the fork source code.
+  notes: Excluded until V16 confirms its definition, unit and treatment. Present in the CNS2022 release. The later
+    fork column Total Connection Flow Time is not in this release and is not assumed to be the same feature.
   pcap_available: pinned_extractor_only
-  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  source: CICFlowMeter, Engelen et al. fork (exact commit undocumented)
 preprocessing:
   version: 0.1.0
   inf_handling: Replace +Infinity and -Infinity with NaN.

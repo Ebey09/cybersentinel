@@ -16,10 +16,9 @@ Registry with sources, terms and citations: `ml/config/datasets.yaml`.
 
 ### Track A: corrected CIC-IDS2017
 
-Two options (see ADR 0004 and VERIFY items V1, V8):
+Used: the published **CNS2022 Improved CIC-IDS2017** release, `CICIDS2017_improved.zip` from https://intrusion-detection.distrinet-research.be/CNS2022/Datasets/ (five files, `monday.csv` to `friday.csv`, 91 columns). Keep the archive as downloaded and record its SHA-256. The exact extractor commit is not documented (ADR 0012, V8).
 
-1. **Pre-built corrected CSVs**, if the correction authors still publish them. [VERIFY] availability and terms.
-2. **Regenerate from raw PCAPs**: download the CIC-IDS2017 PCAPs from https://www.unb.ca/cic/datasets/ids-2017.html, run the pinned Engelen CICFlowMeter image (https://github.com/GintsEngelen/CICFlowMeter, flow timeout 120000000, activity timeout 5000000), then label with https://github.com/GintsEngelen/WTMC2021-Code. Watch the `TIME_DIFFERENCE` timezone setting in the labelling script.
+Alternative, not used now: **regenerate from raw PCAPs**. Download the CIC-IDS2017 PCAPs from https://www.unb.ca/cic/datasets/ids-2017.html, run the pinned Engelen CICFlowMeter image (https://github.com/GintsEngelen/CICFlowMeter, flow timeout 120000000, activity timeout 5000000), then label with https://github.com/GintsEngelen/WTMC2021-Code. Watch the `TIME_DIFFERENCE` timezone setting in the labelling script.
 
 Suggested location: `data/raw/cic_ids2017_corrected/`.
 

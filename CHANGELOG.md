@@ -5,11 +5,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versio
 ## [Unreleased]
 
 ### Added
+- ADR 0012: Track A uses the published CNS2022 Improved CIC-IDS2017 release (`CICIDS2017_improved.zip`). The exact CICFlowMeter generation commit is recorded as unknown, not inferred
+- VERIFY V26: labelling notebook revision used for the release
 - ADR 0010: a dataset whose extractor version is not documented can be verified, but never used for inference. Extractor `commit_status` (`pinned`, `to_verify`, `not_documented`) replaces guessing from the commit text
 - ADR 0011: ambiguous raw column names (for example a repeated `Label`) are resolved by declared `positional_renames`, never silently. `resolve_raw_header` applies them after an exact header match
 - VERIFY V25: Track B extractor version
 
 ### Changed
+- Track A schema v0.3.0 describes the published 91-column CNS2022 layout: `id` (identifier) and `Attempted Category` (label side) added, `Total TCP Flow Time` excluded pending V16, six later fork columns removed. 80 model features. Extractor stays `to_verify`, pcapfix and reordercap recorded
 - Both schemas to v0.2.0. Track B's second label column is no longer assumed to be called `Label.1`
 - `check-header` accepts a repeated column only when the schema declares it, and prints the declared renames
 - Track B application-category label keys marked as placeholders until V6 (`File Transfer` vs `File-Transfer` unresolved)

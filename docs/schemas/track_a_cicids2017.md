@@ -2,14 +2,14 @@
 
 > Generated from the schema YAML by `cybersentinel-ml schema-docs`. Do not edit by hand.
 
-- Schema: `track_a.cicids2017_corrected` v0.2.0 (status: **draft**)
-- Content SHA-256: `65d41f6f5d3383fdc30ab3825eb9940d5377d66142e95bd43412396974779034`
-- Dataset: CIC-IDS2017, corrected by Engelen et al. (WTMC 2021)
-- Extractor: CICFlowMeter (Engelen et al. fork), commit `[VERIFY] pin the exact commit used to build the extractor image` (commit status: **to_verify**)
+- Schema: `track_a.cicids2017_corrected` v0.3.0 (status: **draft**)
+- Content SHA-256: `37e254a78641a823fa398384cca803439052d33a6c7b28f3fd035807fc558076`
+- Dataset: CNS2022 Improved CIC-IDS2017 (Liu, Engelen et al.)
+- Extractor: CICFlowMeter (Engelen et al. fork), commit `[VERIFY] Author tool identified, exact generation commit not published/documented. Do not infer it.` (commit status: **to_verify**)
 - Flow timeout: 120000000 us, activity timeout: 5000000 us
 - PCAP parity: **not_demonstrated**
 - Preprocessing version: 0.1.0
-- Raw columns: 94, model features: 85, excluded: 3, identifiers: 5
+- Raw columns: 91, model features: 80, excluded: 3, identifiers: 6
 
 ## Model input features (in order)
 
@@ -86,20 +86,15 @@
 | 69 | `fwd_init_win_bytes` | FWD Init Win Bytes | float64 | bytes | [-1.0, 65535.0] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | TCP window size in the first forward packet. [VERIFY] sentinel value (expected -1) when not TCP / not observed.  |
 | 70 | `bwd_init_win_bytes` | Bwd Init Win Bytes | float64 | bytes | [-1.0, 65535.0] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | TCP window size in the first backward packet. [VERIFY] sentinel value (expected -1) when not TCP / not observed.  |
 | 71 | `fwd_active_data_packets` | Fwd Act Data Pkts | float64 | packets | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Forward packets carrying at least 1 byte of payload.  |
-| 72 | `bwd_active_data_packets` | Bwd Act Data Pkts | float64 | packets | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Backward packets carrying at least 1 byte of payload.  |
-| 73 | `fwd_seg_size_min` | Fwd Seg Size Min | float64 | bytes | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Minimum forward segment size. [VERIFY] exact definition in FlowFeature/BasicFlow source (header vs payload size).  |
-| 74 | `bwd_seg_size_min` | Bwd Seg Size Min | float64 | bytes | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Minimum backward segment size. [VERIFY] exact definition in BasicFlow source.  |
-| 75 | `active_mean` | Active Mean | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Mean time the flow was active before becoming idle (activity timeout). Fork fix: no longer encodes an absolute timestamp (fork README). |
-| 76 | `active_std` | Active Std | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Standard deviation of active periods. Fork fix: no longer encodes an absolute timestamp (fork README). |
-| 77 | `active_max` | Active Max | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Longest active period. Fork fix: no longer encodes an absolute timestamp (fork README). |
-| 78 | `active_min` | Active Min | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Shortest active period. Fork fix: no longer encodes an absolute timestamp (fork README). |
-| 79 | `idle_mean` | Idle Mean | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Mean idle period between active periods. Fork fix: no longer encodes an absolute timestamp (fork README). |
-| 80 | `idle_std` | Idle Std | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Standard deviation of idle periods. Fork fix: no longer encodes an absolute timestamp (fork README). |
-| 81 | `idle_max` | Idle Max | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Longest idle period. Fork fix: no longer encodes an absolute timestamp (fork README). |
-| 82 | `idle_min` | Idle Min | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Shortest idle period. Fork fix: no longer encodes an absolute timestamp (fork README). |
-| 83 | `fwd_tcp_retrans_count` | Fwd TCP Retrans. Count | float64 | count | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | TCP retransmissions detected in the forward direction.  |
-| 84 | `bwd_tcp_retrans_count` | Bwd TCP Retrans. Count | float64 | count | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | TCP retransmissions detected in the backward direction.  |
-| 85 | `total_tcp_retrans_count` | Total TCP Retrans. Count | float64 | count | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | TCP retransmissions, both directions.  |
+| 72 | `fwd_seg_size_min` | Fwd Seg Size Min | float64 | bytes | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Minimum forward segment size. [VERIFY] exact definition in FlowFeature/BasicFlow source (header vs payload size).  |
+| 73 | `active_mean` | Active Mean | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Mean time the flow was active before becoming idle (activity timeout). Fork fix: no longer encodes an absolute timestamp (fork README). |
+| 74 | `active_std` | Active Std | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Standard deviation of active periods. Fork fix: no longer encodes an absolute timestamp (fork README). |
+| 75 | `active_max` | Active Max | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Longest active period. Fork fix: no longer encodes an absolute timestamp (fork README). |
+| 76 | `active_min` | Active Min | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Shortest active period. Fork fix: no longer encodes an absolute timestamp (fork README). |
+| 77 | `idle_mean` | Idle Mean | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Mean idle period between active periods. Fork fix: no longer encodes an absolute timestamp (fork README). |
+| 78 | `idle_std` | Idle Std | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Standard deviation of idle periods. Fork fix: no longer encodes an absolute timestamp (fork README). |
+| 79 | `idle_max` | Idle Max | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Longest idle period. Fork fix: no longer encodes an absolute timestamp (fork README). |
+| 80 | `idle_min` | Idle Min | float64 | microseconds | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | pinned_extractor_only | draft | Shortest idle period. Fork fix: no longer encodes an absolute timestamp (fork README). |
 
 ## Derived features (appended after schema features)
 
@@ -111,7 +106,7 @@
 |---|---|---|
 | `icmp_code` | ICMP Code | Excluded until the non-ICMP sentinel value and encoding are confirmed in EDA. |
 | `icmp_type` | ICMP Type | Excluded until the non-ICMP sentinel value and encoding are confirmed in EDA. |
-| `total_connection_flow_time` | Total Connection Flow Time | Excluded until its definition is confirmed from the fork source code. |
+| `total_tcp_flow_time` | Total TCP Flow Time | Excluded until V16 confirms its definition, unit and treatment. Present in the CNS2022 release. The later fork column Total Connection Flow Time is not in this release and is not assumed to be the same feature. |
 
 ## Identifier columns (never model inputs)
 
@@ -122,10 +117,12 @@
 | `src_port` | Src Port | display, alert_rules, related_flows | Ephemeral client port, mostly random noise, and a potential session identifier. |
 | `dst_ip` | Dst IP | display, alert_rules, related_flows | Lab-specific, same reason as Src IP. Kept for display and alert rules only. |
 | `timestamp` | Timestamp | display, alert_rules, related_flows | Labels were assigned by time window, so time is a direct label proxy. Kept for display, related-flow lookup and timelines only. |
+| `row_id` | id | display, related_flows | Row number written by the CNS2022 labelling notebook (print_index), not a CICFlowMeter feature. It follows file order, which follows time, so it would act as a label proxy. |
 
 ## Label columns
 
-- `Label` -> `label`. 
+- `Label` -> `label`. [VERIFY] V5: exact label strings in the CNS2022 release. Attempted flows keep their own label string and map to BENIGN in the experiments (ADR 0004); there is no separate Attempted class.
+- `Attempted Category` -> `attempted_category`. Label-side metadata added by the CNS2022 labelling notebook (default -1, set per labelled attempt). Derived from the labelling itself, so it is never a model input and never a training target. Category definitions are on the CNS2022 Tools_Documentation page.
 
 ## Output vocabulary
 
