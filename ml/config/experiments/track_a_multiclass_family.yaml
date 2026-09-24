@@ -1,0 +1,91 @@
+# Track A, multi-class by attack family on corrected CIC-IDS2017.
+# Families group dataset labels; every group is traceable to the raw labels below.
+# Classes with fewer than min_class_count TRAINING samples are reported as 'insufficient data'
+# and removed from this task (they stay in the binary task). [VERIFY] counts after download.
+experiment_id: track_a_multiclass_family_v0
+track: A
+schema_path: ml/config/schemas/track_a_cicids2017.yaml
+task: multiclass_family
+seed: 42
+label_column: Label
+label_map:
+  BENIGN: BENIGN
+  FTP-Patator: CREDENTIAL_BRUTE_FORCE
+  SSH-Patator: CREDENTIAL_BRUTE_FORCE
+  DoS GoldenEye: DOS
+  DoS Hulk: DOS
+  DoS Slowhttptest: DOS
+  DoS slowloris: DOS
+  Heartbleed: HEARTBLEED
+  Web Attack - Brute Force: WEB_ATTACK
+  Web Attack - XSS: WEB_ATTACK
+  Web Attack - Sql Injection: WEB_ATTACK
+  Infiltration: INFILTRATION
+  Bot: BOTNET
+  PortScan: PORTSCAN
+  DDoS: DDOS
+  FTP-Patator - Attempted: BENIGN
+  SSH-Patator - Attempted: BENIGN
+  DoS GoldenEye - Attempted: BENIGN
+  DoS Hulk - Attempted: BENIGN
+  DoS Slowhttptest - Attempted: BENIGN
+  DoS slowloris - Attempted: BENIGN
+  Heartbleed - Attempted: BENIGN
+  Web Attack - Brute Force - Attempted: BENIGN
+  Web Attack - XSS - Attempted: BENIGN
+  Web Attack - Sql Injection - Attempted: BENIGN
+  Infiltration - Attempted: BENIGN
+  Bot - Attempted: BENIGN
+  DDoS - Attempted: BENIGN
+class_display:
+  BENIGN: Benign
+  CREDENTIAL_BRUTE_FORCE: Brute force against FTP/SSH (FTP-Patator, SSH-Patator)
+  DOS: Denial of service (Hulk, GoldenEye, slowloris, Slowhttptest)
+  DDOS: Distributed denial of service
+  PORTSCAN: Port scan
+  WEB_ATTACK: Web attack (brute force, XSS, SQL injection)
+  BOTNET: Botnet traffic
+  INFILTRATION: Infiltration
+  HEARTBLEED: Heartbleed exploitation
+unknown_label_policy: fail
+min_class_count: 100
+include_dst_port: true
+split:
+  method: stratified_random
+  train: 0.7
+  validation: 0.15
+  test: 0.15
+  dedup_before_split: true
+models:
+- algorithm: logistic_regression
+  params:
+    C: 1.0
+    max_iter: 2000
+    class_weight: balanced
+- algorithm: random_forest
+  params:
+    n_estimators: 200
+    min_samples_leaf: 1
+    class_weight: balanced_subsample
+    max_samples: 0.5
+    n_jobs: -1
+- algorithm: xgboost
+  params:
+    n_estimators: 600
+    max_depth: 8
+    learning_rate: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    tree_method: hist
+    early_stopping_rounds: 30
+calibration:
+  method: isotonic
+  fit_on: validation
+threshold:
+  policy: argmax
+  target_fpr: null
+  fit_on: validation
+ablations:
+- no_dst_port
+- shuffled_labels
+notes: Display text is deliberately generic. Check the CIC-IDS2017 page before adding tool names.

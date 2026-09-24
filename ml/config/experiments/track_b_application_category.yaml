@@ -1,0 +1,70 @@
+# Track B: application category (8 classes) on CIC-Darknet2020 ('Label.1').
+# Describes what kind of application traffic a flow resembles. Not a harm judgement.
+# [VERIFY] exact strings and casing. If the CSV has casing variants (for example two spellings
+# of one category), list each variant explicitly here so the merge is visible in review.
+experiment_id: track_b_application_category_v0
+track: B
+schema_path: ml/config/schemas/track_b_darknet2020.yaml
+task: application_category
+seed: 42
+label_column: Label.1
+label_map:
+  Audio-Streaming: AUDIO_STREAMING
+  Browsing: BROWSING
+  Chat: CHAT
+  Email: EMAIL
+  File-Transfer: FILE_TRANSFER
+  P2P: P2P
+  Video-Streaming: VIDEO_STREAMING
+  VOIP: VOIP
+class_display:
+  AUDIO_STREAMING: 'Application category: Audio Streaming'
+  BROWSING: 'Application category: Browsing'
+  CHAT: 'Application category: Chat'
+  EMAIL: 'Application category: Email'
+  FILE_TRANSFER: 'Application category: File Transfer'
+  P2P: 'Application category: P2P'
+  VIDEO_STREAMING: 'Application category: Video Streaming'
+  VOIP: 'Application category: VoIP'
+unknown_label_policy: fail
+min_class_count: 100
+include_dst_port: true
+split:
+  method: stratified_random
+  train: 0.7
+  validation: 0.15
+  test: 0.15
+  dedup_before_split: true
+models:
+- algorithm: logistic_regression
+  params:
+    C: 1.0
+    max_iter: 2000
+    class_weight: balanced
+- algorithm: random_forest
+  params:
+    n_estimators: 200
+    min_samples_leaf: 1
+    class_weight: balanced_subsample
+    max_samples: 0.5
+    n_jobs: -1
+- algorithm: xgboost
+  params:
+    n_estimators: 600
+    max_depth: 8
+    learning_rate: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    tree_method: hist
+    early_stopping_rounds: 30
+calibration:
+  method: isotonic
+  fit_on: validation
+threshold:
+  policy: argmax
+  target_fpr: null
+  fit_on: validation
+ablations:
+- no_dst_port
+- shuffled_labels
+notes: Label strings are from the literature, not yet from the CSV. [VERIFY] with `cybersentinel-ml inspect-labels`.

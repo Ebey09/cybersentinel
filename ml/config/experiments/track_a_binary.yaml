@@ -1,0 +1,86 @@
+# Track A, binary: benign vs attack on corrected CIC-IDS2017.
+# Consumed by training/evaluation from Phase 5. Validated now by tests.
+# Label strings are copied from GintsEngelen/WTMC2021-Code (MakeDataNumpyFriendly.py).
+# '- Attempted' flows map to BENIGN, following Engelen et al. See docs/adr/0004.
+experiment_id: track_a_binary_v0
+track: A
+schema_path: ml/config/schemas/track_a_cicids2017.yaml
+task: binary
+seed: 42
+label_column: Label
+label_map:
+  BENIGN: BENIGN
+  FTP-Patator: ATTACK
+  SSH-Patator: ATTACK
+  DoS GoldenEye: ATTACK
+  DoS Hulk: ATTACK
+  DoS Slowhttptest: ATTACK
+  DoS slowloris: ATTACK
+  Heartbleed: ATTACK
+  Web Attack - Brute Force: ATTACK
+  Web Attack - XSS: ATTACK
+  Web Attack - Sql Injection: ATTACK
+  Infiltration: ATTACK
+  Bot: ATTACK
+  PortScan: ATTACK
+  DDoS: ATTACK
+  FTP-Patator - Attempted: BENIGN
+  SSH-Patator - Attempted: BENIGN
+  DoS GoldenEye - Attempted: BENIGN
+  DoS Hulk - Attempted: BENIGN
+  DoS Slowhttptest - Attempted: BENIGN
+  DoS slowloris - Attempted: BENIGN
+  Heartbleed - Attempted: BENIGN
+  Web Attack - Brute Force - Attempted: BENIGN
+  Web Attack - XSS - Attempted: BENIGN
+  Web Attack - Sql Injection - Attempted: BENIGN
+  Infiltration - Attempted: BENIGN
+  Bot - Attempted: BENIGN
+  DDoS - Attempted: BENIGN
+class_display:
+  BENIGN: Benign
+  ATTACK: Attack (matches attack patterns in CIC-IDS2017)
+unknown_label_policy: fail
+min_class_count: null
+include_dst_port: true
+split:
+  method: stratified_random
+  train: 0.7
+  validation: 0.15
+  test: 0.15
+  dedup_before_split: true
+models:
+- algorithm: logistic_regression
+  params:
+    C: 1.0
+    max_iter: 2000
+    class_weight: balanced
+- algorithm: random_forest
+  params:
+    n_estimators: 200
+    min_samples_leaf: 1
+    class_weight: balanced_subsample
+    max_samples: 0.5
+    n_jobs: -1
+- algorithm: xgboost
+  params:
+    n_estimators: 600
+    max_depth: 8
+    learning_rate: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    tree_method: hist
+    early_stopping_rounds: 30
+calibration:
+  method: isotonic
+  fit_on: validation
+threshold:
+  policy: target_fpr
+  target_fpr: 0.001
+  fit_on: validation
+ablations:
+- no_dst_port
+- shuffled_labels
+- single_feature_auc
+notes: target_fpr 0.001 = about 1 false alert per 1,000 benign flows on the validation split. Starting point, revisit
+  after EDA.
