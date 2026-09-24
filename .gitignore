@@ -1,0 +1,55 @@
+# ---- Secrets -------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---- Datasets and artifacts (never commit) ---------------------------------
+data/raw/*
+data/interim/*
+data/processed/*
+data/uploads/*
+!data/**/.gitkeep
+*.pcap
+*.pcapng
+*.cap
+*.parquet
+models/*
+!models/README.md
+ml/runs/
+runs/
+
+# Dataset CSVs anywhere except synthetic fixtures
+*.csv
+*.CSV
+!data/fixtures/**/*.csv
+
+# ---- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+build/
+.ipynb_checkpoints/
+
+# ---- Node / frontend -------------------------------------------------------
+node_modules/
+frontend/dist/
+frontend/coverage/
+
+# ---- OS / editors ----------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
