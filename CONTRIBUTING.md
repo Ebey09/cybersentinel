@@ -9,7 +9,7 @@ This is a personal portfolio project, but it is run like a team project so the p
 3. Keep commits small. Use [Conventional Commits](https://www.conventionalcommits.org/):
    `feat(ml): ...`, `fix(contract): ...`, `docs(adr): ...`, `test: ...`, `chore: ...`, `ci: ...`
 4. Open a pull request using the template. Once CI is added, it must pass before merge. Until then, run the checks below locally.
-5. Squash-merge to `main`.
+5. Merge phase PRs with a merge commit (not squash), so the small, logical commits stay visible in history.
 
 ## Local setup (Phase 1)
 
