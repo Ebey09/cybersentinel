@@ -1,0 +1,48 @@
+# Track B, DIAGNOSTIC ONLY (never deployed): original 4 labels.
+# Purpose: measure how easily the model separates Non-Tor from Non-VPN. Both are 'regular'
+# traffic from different capture sessions. High separability is evidence of a capture
+# artifact, and is reported as a dataset limitation.
+experiment_id: track_b_traffic_type_4class_diag_v0
+track: B
+schema_path: ml/config/schemas/track_b_darknet2020.yaml
+task: traffic_type_4class_diagnostic
+seed: 42
+label_column: Label
+label_map:
+  Tor: TOR
+  Non-Tor: NON_TOR
+  VPN: VPN
+  Non-VPN: NON_VPN
+class_display:
+  TOR: Tor traffic
+  NON_TOR: Non-Tor traffic (Tor capture session)
+  VPN: VPN traffic
+  NON_VPN: Non-VPN traffic (VPN capture session)
+unknown_label_policy: fail
+min_class_count: null
+include_dst_port: true
+split:
+  method: stratified_random
+  train: 0.7
+  validation: 0.15
+  test: 0.15
+  dedup_before_split: true
+models:
+- algorithm: xgboost
+  params:
+    n_estimators: 600
+    max_depth: 8
+    learning_rate: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    tree_method: hist
+    early_stopping_rounds: 30
+calibration:
+  method: none
+  fit_on: validation
+threshold:
+  policy: argmax
+  target_fpr: null
+  fit_on: validation
+ablations: []
+notes: Label strings are from the literature, not yet from the CSV. [VERIFY] with `cybersentinel-ml inspect-labels`.

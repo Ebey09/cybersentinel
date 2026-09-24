@@ -1,0 +1,34 @@
+# Dataset registry. Nothing here is downloaded automatically.
+# CIC datasets are obtained from UNB CIC by the user; this repo never redistributes them.
+# Fill in `files` (name + sha256) after download with: sha256sum <file>   (Phase 4 adds a helper)
+# Every value marked [VERIFY] must be confirmed before a schema is set to `verified`.
+
+datasets:
+  - id: cic_ids2017_corrected
+    track: A
+    name: CIC-IDS2017, corrected labels and flows (Engelen et al.)
+    original_homepage: https://www.unb.ca/cic/datasets/ids-2017.html
+    correction_code: https://github.com/GintsEngelen/WTMC2021-Code
+    correction_code_2022: https://github.com/GintsEngelen/CNS2022_Code
+    extractor: https://github.com/GintsEngelen/CICFlowMeter
+    acquisition:
+      option_1: "Download pre-built corrected CSVs from the authors' project page, IF available. [VERIFY] availability, URL and terms (their site was not reachable when this was written)."
+      option_2: "Download raw CIC-IDS2017 PCAPs from UNB CIC, run the pinned Engelen CICFlowMeter image, then Engelen's labelling script. Reproduces the corrected CSVs and fixes the extractor version by construction."
+    terms: "[VERIFY] read the UNB CIC terms of use on the dataset page and the correction project's terms. Do not commit dataset rows to git."
+    citations:
+      - "Sharafaldin, Habibi Lashkari, Ghorbani. Toward Generating a New Intrusion Detection Dataset and Intrusion Traffic Characterization. ICISSP 2018."
+      - "Engelen, Rimmer, Joosen. Troubleshooting an Intrusion Detection Dataset: the CICIDS2017 Case Study. IEEE SPW (WTMC) 2021."
+      - "Liu, Engelen, Lynar, Essam, Joosen. Error Prevalence in NIDS datasets: A Case Study on CIC-IDS-2017 and CSE-CIC-IDS-2018. IEEE CNS 2022. (only if the 2022 release is used)"
+    files: []   # e.g. - {name: monday.csv, sha256: <64 hex>}
+
+  - id: cic_darknet2020
+    track: B
+    name: CIC-Darknet2020
+    original_homepage: https://www.unb.ca/cic/datasets/darknet2020.html
+    extractor: "CICFlowMeter, upstream (https://github.com/ahlashkari/CICFlowMeter). [VERIFY] exact version: not documented in the sources checked."
+    acquisition:
+      option_1: "Download the CSV from UNB CIC (registration form). [VERIFY] current process and file name."
+    terms: "[VERIFY] read the UNB CIC terms of use on the dataset page. Do not commit dataset rows to git."
+    citations:
+      - "Habibi Lashkari, Kaur, Rahali. DIDarknet: A Contemporary Approach to Detect and Characterize the Darknet Traffic using Deep Image Learning. ICCNS 2020. [VERIFY] citation text on the dataset page."
+    files: []

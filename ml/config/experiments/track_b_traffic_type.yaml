@@ -1,0 +1,62 @@
+# Track B, primary task: Tor vs VPN vs regular traffic on CIC-Darknet2020.
+# Non-Tor and Non-VPN are merged into REGULAR on purpose: they come from two different
+# capture sessions (ISCXTor2016 and ISCXVPN2016), so separating them risks learning the
+# capture environment instead of a traffic property. See docs/adr/0002.
+experiment_id: track_b_traffic_type_v0
+track: B
+schema_path: ml/config/schemas/track_b_darknet2020.yaml
+task: traffic_type_3class
+seed: 42
+label_column: Label
+label_map:
+  Tor: TOR
+  VPN: VPN
+  Non-Tor: REGULAR
+  Non-VPN: REGULAR
+class_display:
+  TOR: Tor traffic detected (policy/risk signal)
+  VPN: VPN traffic detected (policy/risk signal)
+  REGULAR: Non-Tor / Non-VPN traffic
+unknown_label_policy: fail
+min_class_count: null
+include_dst_port: true
+split:
+  method: stratified_random
+  train: 0.7
+  validation: 0.15
+  test: 0.15
+  dedup_before_split: true
+models:
+- algorithm: logistic_regression
+  params:
+    C: 1.0
+    max_iter: 2000
+    class_weight: balanced
+- algorithm: random_forest
+  params:
+    n_estimators: 200
+    min_samples_leaf: 1
+    class_weight: balanced_subsample
+    max_samples: 0.5
+    n_jobs: -1
+- algorithm: xgboost
+  params:
+    n_estimators: 600
+    max_depth: 8
+    learning_rate: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    tree_method: hist
+    early_stopping_rounds: 30
+calibration:
+  method: isotonic
+  fit_on: validation
+threshold:
+  policy: argmax
+  target_fpr: null
+  fit_on: validation
+ablations:
+- no_dst_port
+- shuffled_labels
+- single_feature_auc
+notes: Label strings are from the literature, not yet from the CSV. [VERIFY] with `cybersentinel-ml inspect-labels`.

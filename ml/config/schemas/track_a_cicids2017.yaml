@@ -1,0 +1,1896 @@
+# Feature schema: Track A (attack detection, corrected CIC-IDS2017)
+# Source of truth for training AND inference. Validated by cybersentinel_ml.contract.
+# status: draft -> training and inference refuse to run until it is 'verified'.
+# Column list taken from FlowFeature.java in github.com/GintsEngelen/CICFlowMeter (master, 94 columns incl. Label).
+
+schema_id: track_a.cicids2017_corrected
+schema_version: 0.1.0
+status: draft
+track: A
+title: 'Track A: Attack detection (corrected CIC-IDS2017)'
+dataset:
+  name: CIC-IDS2017, corrected by Engelen et al. (WTMC 2021)
+  homepage: https://www.unb.ca/cic/datasets/ids-2017.html
+  correction: https://github.com/GintsEngelen/WTMC2021-Code
+  release: '[VERIFY] which corrected release is used (WTMC 2021 labelling, or CNS 2022 improved version) and where
+    the CSVs come from'
+extractor:
+  name: CICFlowMeter (Engelen et al. fork)
+  repository: https://github.com/GintsEngelen/CICFlowMeter
+  commit: '[VERIFY] pin the exact commit used to build the extractor image'
+  flow_timeout_us: 120000000
+  activity_timeout_us: 5000000
+  pcap_preprocessing: []
+  known_header_columns: 94
+  notes: Timeouts are the defaults stated in the Engelen READMEs. The CNS 2022 pipeline also ran pcapfix and reordercap
+    before extraction; add them here if that release is used.
+parity:
+  status: not_demonstrated
+  evidence: null
+  required_for:
+  - pcap_inference
+  test: docs/adr/0006-pcap-feature-parity-is-mandatory.md
+raw_columns:
+- Flow ID
+- Src IP
+- Src Port
+- Dst IP
+- Dst Port
+- Protocol
+- Timestamp
+- Flow Duration
+- Total Fwd Packet
+- Total Bwd packets
+- Total Length of Fwd Packet
+- Total Length of Bwd Packet
+- Fwd Packet Length Max
+- Fwd Packet Length Min
+- Fwd Packet Length Mean
+- Fwd Packet Length Std
+- Bwd Packet Length Max
+- Bwd Packet Length Min
+- Bwd Packet Length Mean
+- Bwd Packet Length Std
+- Flow Bytes/s
+- Flow Packets/s
+- Flow IAT Mean
+- Flow IAT Std
+- Flow IAT Max
+- Flow IAT Min
+- Fwd IAT Total
+- Fwd IAT Mean
+- Fwd IAT Std
+- Fwd IAT Max
+- Fwd IAT Min
+- Bwd IAT Total
+- Bwd IAT Mean
+- Bwd IAT Std
+- Bwd IAT Max
+- Bwd IAT Min
+- Fwd PSH Flags
+- Bwd PSH Flags
+- Fwd URG Flags
+- Bwd URG Flags
+- Fwd RST Flags
+- Bwd RST Flags
+- Fwd Header Length
+- Bwd Header Length
+- Fwd Packets/s
+- Bwd Packets/s
+- Packet Length Min
+- Packet Length Max
+- Packet Length Mean
+- Packet Length Std
+- Packet Length Variance
+- FIN Flag Count
+- SYN Flag Count
+- RST Flag Count
+- PSH Flag Count
+- ACK Flag Count
+- URG Flag Count
+- CWR Flag Count
+- ECE Flag Count
+- Down/Up Ratio
+- Average Packet Size
+- Fwd Segment Size Avg
+- Bwd Segment Size Avg
+- Fwd Bytes/Bulk Avg
+- Fwd Packet/Bulk Avg
+- Fwd Bulk Rate Avg
+- Bwd Bytes/Bulk Avg
+- Bwd Packet/Bulk Avg
+- Bwd Bulk Rate Avg
+- Subflow Fwd Packets
+- Subflow Fwd Bytes
+- Subflow Bwd Packets
+- Subflow Bwd Bytes
+- FWD Init Win Bytes
+- Bwd Init Win Bytes
+- Fwd Act Data Pkts
+- Bwd Act Data Pkts
+- Fwd Seg Size Min
+- Bwd Seg Size Min
+- Active Mean
+- Active Std
+- Active Max
+- Active Min
+- Idle Mean
+- Idle Std
+- Idle Max
+- Idle Min
+- ICMP Code
+- ICMP Type
+- Fwd TCP Retrans. Count
+- Bwd TCP Retrans. Count
+- Total TCP Retrans. Count
+- Total Connection Flow Time
+- Label
+identifier_columns:
+- name: flow_id
+  source_column: Flow ID
+  dtype: string
+  used_for:
+  - display
+  - alert_rules
+  - related_flows
+  model_input: false
+  reason: Identifier. Encodes IPs and ports, so it would leak lab topology into the model.
+- name: src_ip
+  source_column: Src IP
+  dtype: string
+  used_for:
+  - display
+  - alert_rules
+  - related_flows
+  model_input: false
+  reason: Lab-specific. Attacker and victim IPs are fixed in the capture, so the model would learn addresses, not
+    behaviour. Kept for display and alert rules only.
+- name: src_port
+  source_column: Src Port
+  dtype: int64
+  used_for:
+  - display
+  - alert_rules
+  - related_flows
+  model_input: false
+  reason: Ephemeral client port, mostly random noise, and a potential session identifier.
+- name: dst_ip
+  source_column: Dst IP
+  dtype: string
+  used_for:
+  - display
+  - alert_rules
+  - related_flows
+  model_input: false
+  reason: Lab-specific, same reason as Src IP. Kept for display and alert rules only.
+- name: timestamp
+  source_column: Timestamp
+  dtype: string
+  used_for:
+  - display
+  - alert_rules
+  - related_flows
+  model_input: false
+  reason: Labels were assigned by time window, so time is a direct label proxy. Kept for display, related-flow lookup
+    and timelines only.
+label_columns:
+- source_column: Label
+  name: label
+  known_values_source: WTMC2021-Code labelling_CSV_flows.py and MakeDataNumpyFriendly.py
+features:
+- name: dst_port
+  source_column: Dst Port
+  dtype: int64
+  unit: null
+  group: port
+  meaning: Destination transport port.
+  expected_range:
+    min: 0
+    max: 65535
+  missing_values: reject_row
+  scaling:
+    logistic_regression: excluded
+    tree_models: none
+  encoding: numeric_trees_only
+  included: true
+  status: draft
+  notes: Kept for tree models only (a port number is not a linear quantity). Every experiment also runs a no-port
+    ablation to detect port shortcut learning.
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: protocol
+  source_column: Protocol
+  dtype: int64
+  unit: null
+  group: categorical
+  meaning: IANA IP protocol number (6 = TCP, 17 = UDP).
+  expected_range:
+    min: 0
+    max: 255
+  missing_values: reject_row
+  scaling:
+    logistic_regression: none
+    tree_models: none
+  encoding: one_hot_fixed_categories
+  included: true
+  status: draft
+  notes: '[VERIFY] observed protocol values in the real CSV (CICFlowMeter may emit 0 for non-TCP/UDP).'
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+  categories:
+  - 6
+  - 17
+  unknown_category: other
+- name: flow_duration
+  source_column: Flow Duration
+  dtype: float64
+  unit: microseconds
+  group: time
+  meaning: Time between the first and last packet of the flow.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_packets_total
+  source_column: Total Fwd Packet
+  dtype: float64
+  unit: packets
+  group: volume
+  meaning: Number of packets sent from initiator to responder.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_packets_total
+  source_column: Total Bwd packets
+  dtype: float64
+  unit: packets
+  group: volume
+  meaning: Number of packets sent from responder to initiator.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_payload_bytes_total
+  source_column: Total Length of Fwd Packet
+  dtype: float64
+  unit: bytes
+  group: volume
+  meaning: Total payload bytes in the forward direction.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: 'Label coupling: Engelen''s labelling marks a TCP attack-window flow as ''<attack> - Attempted'' exactly
+    when this value is 0. With Attempted mapped to BENIGN, this feature partly encodes the labelling rule. Reported
+    in the evaluation, see docs/adr/0004.'
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_payload_bytes_total
+  source_column: Total Length of Bwd Packet
+  dtype: float64
+  unit: bytes
+  group: volume
+  meaning: Total payload bytes in the backward direction.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_pkt_len_max
+  source_column: Fwd Packet Length Max
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Largest forward packet payload length.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_pkt_len_min
+  source_column: Fwd Packet Length Min
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Smallest forward packet payload length.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_pkt_len_mean
+  source_column: Fwd Packet Length Mean
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Mean forward packet payload length.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_pkt_len_std
+  source_column: Fwd Packet Length Std
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Standard deviation of forward packet payload length.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_pkt_len_max
+  source_column: Bwd Packet Length Max
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Largest backward packet payload length.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_pkt_len_min
+  source_column: Bwd Packet Length Min
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Smallest backward packet payload length.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_pkt_len_mean
+  source_column: Bwd Packet Length Mean
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Mean backward packet payload length.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_pkt_len_std
+  source_column: Bwd Packet Length Std
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Standard deviation of backward packet payload length.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: flow_bytes_per_s
+  source_column: Flow Bytes/s
+  dtype: float64
+  unit: bytes per second
+  group: rate
+  meaning: Payload bytes per second over the whole flow. Undefined (Infinity/NaN) when duration is 0.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median_plus_zero_duration_flag
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: flow_packets_per_s
+  source_column: Flow Packets/s
+  dtype: float64
+  unit: packets per second
+  group: rate
+  meaning: Packets per second over the whole flow. Undefined (Infinity/NaN) when duration is 0.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median_plus_zero_duration_flag
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: flow_iat_mean
+  source_column: Flow IAT Mean
+  dtype: float64
+  unit: microseconds
+  group: time
+  meaning: Mean inter-arrival time between packets in either direction.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: flow_iat_std
+  source_column: Flow IAT Std
+  dtype: float64
+  unit: microseconds
+  group: time
+  meaning: Standard deviation of inter-arrival time, both directions.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: flow_iat_max
+  source_column: Flow IAT Max
+  dtype: float64
+  unit: microseconds
+  group: time
+  meaning: Maximum inter-arrival time, both directions.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: flow_iat_min
+  source_column: Flow IAT Min
+  dtype: float64
+  unit: microseconds
+  group: time
+  meaning: Minimum inter-arrival time, both directions.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_iat_total
+  source_column: Fwd IAT Total
+  dtype: float64
+  unit: microseconds
+  group: time
+  meaning: Sum of inter-arrival times between forward packets.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_iat_mean
+  source_column: Fwd IAT Mean
+  dtype: float64
+  unit: microseconds
+  group: time
+  meaning: Mean inter-arrival time between forward packets.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_iat_std
+  source_column: Fwd IAT Std
+  dtype: float64
+  unit: microseconds
+  group: time
+  meaning: Standard deviation of forward inter-arrival time.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_iat_max
+  source_column: Fwd IAT Max
+  dtype: float64
+  unit: microseconds
+  group: time
+  meaning: Maximum forward inter-arrival time.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_iat_min
+  source_column: Fwd IAT Min
+  dtype: float64
+  unit: microseconds
+  group: time
+  meaning: Minimum forward inter-arrival time.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_iat_total
+  source_column: Bwd IAT Total
+  dtype: float64
+  unit: microseconds
+  group: time
+  meaning: Sum of inter-arrival times between backward packets.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_iat_mean
+  source_column: Bwd IAT Mean
+  dtype: float64
+  unit: microseconds
+  group: time
+  meaning: Mean inter-arrival time between backward packets.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_iat_std
+  source_column: Bwd IAT Std
+  dtype: float64
+  unit: microseconds
+  group: time
+  meaning: Standard deviation of backward inter-arrival time.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_iat_max
+  source_column: Bwd IAT Max
+  dtype: float64
+  unit: microseconds
+  group: time
+  meaning: Maximum backward inter-arrival time.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_iat_min
+  source_column: Bwd IAT Min
+  dtype: float64
+  unit: microseconds
+  group: time
+  meaning: Minimum backward inter-arrival time.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_psh_flags
+  source_column: Fwd PSH Flags
+  dtype: float64
+  unit: count
+  group: tcp_flags
+  meaning: Number of forward packets with the PSH flag set.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: Correctly incremented in the Engelen fork (bug fix listed in the fork README).
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_psh_flags
+  source_column: Bwd PSH Flags
+  dtype: float64
+  unit: count
+  group: tcp_flags
+  meaning: Number of backward packets with the PSH flag set.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: Correctly incremented in the Engelen fork (bug fix listed in the fork README).
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_urg_flags
+  source_column: Fwd URG Flags
+  dtype: float64
+  unit: count
+  group: tcp_flags
+  meaning: Number of forward packets with the URG flag set.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: Correctly incremented in the Engelen fork (bug fix listed in the fork README).
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_urg_flags
+  source_column: Bwd URG Flags
+  dtype: float64
+  unit: count
+  group: tcp_flags
+  meaning: Number of backward packets with the URG flag set.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: Correctly incremented in the Engelen fork (bug fix listed in the fork README).
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_rst_flags
+  source_column: Fwd RST Flags
+  dtype: float64
+  unit: count
+  group: tcp_flags
+  meaning: Number of forward packets with the RST flag set.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_rst_flags
+  source_column: Bwd RST Flags
+  dtype: float64
+  unit: count
+  group: tcp_flags
+  meaning: Number of backward packets with the RST flag set.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_header_bytes_total
+  source_column: Fwd Header Length
+  dtype: float64
+  unit: bytes
+  group: volume
+  meaning: Total bytes of transport/network headers in the forward direction.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_header_bytes_total
+  source_column: Bwd Header Length
+  dtype: float64
+  unit: bytes
+  group: volume
+  meaning: Total bytes of transport/network headers in the backward direction.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_packets_per_s
+  source_column: Fwd Packets/s
+  dtype: float64
+  unit: packets per second
+  group: rate
+  meaning: Forward packets per second.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median_plus_zero_duration_flag
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_packets_per_s
+  source_column: Bwd Packets/s
+  dtype: float64
+  unit: packets per second
+  group: rate
+  meaning: Backward packets per second.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median_plus_zero_duration_flag
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: pkt_len_min
+  source_column: Packet Length Min
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Smallest packet payload length, both directions.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: pkt_len_max
+  source_column: Packet Length Max
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Largest packet payload length, both directions.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: pkt_len_mean
+  source_column: Packet Length Mean
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Mean packet payload length, both directions.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: pkt_len_std
+  source_column: Packet Length Std
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Standard deviation of packet payload length, both directions.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: pkt_len_var
+  source_column: Packet Length Variance
+  dtype: float64
+  unit: bytes squared
+  group: packet_size
+  meaning: Variance of packet payload length, both directions.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fin_flag_count
+  source_column: FIN Flag Count
+  dtype: float64
+  unit: count
+  group: tcp_flags
+  meaning: Packets with FIN set. [VERIFY] whether CICFlowMeter stores a count or a 0/1 indicator.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: syn_flag_count
+  source_column: SYN Flag Count
+  dtype: float64
+  unit: count
+  group: tcp_flags
+  meaning: Packets with SYN set. [VERIFY] count vs 0/1 indicator.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: rst_flag_count
+  source_column: RST Flag Count
+  dtype: float64
+  unit: count
+  group: tcp_flags
+  meaning: Packets with RST set. [VERIFY] count vs 0/1 indicator.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: psh_flag_count
+  source_column: PSH Flag Count
+  dtype: float64
+  unit: count
+  group: tcp_flags
+  meaning: Packets with PSH set. [VERIFY] count vs 0/1 indicator.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: ack_flag_count
+  source_column: ACK Flag Count
+  dtype: float64
+  unit: count
+  group: tcp_flags
+  meaning: Packets with ACK set. [VERIFY] count vs 0/1 indicator.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: urg_flag_count
+  source_column: URG Flag Count
+  dtype: float64
+  unit: count
+  group: tcp_flags
+  meaning: Packets with URG set. [VERIFY] count vs 0/1 indicator.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: cwr_flag_count
+  source_column: CWR Flag Count
+  dtype: float64
+  unit: count
+  group: tcp_flags
+  meaning: Packets with CWR set. [VERIFY] count vs 0/1 indicator.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: ece_flag_count
+  source_column: ECE Flag Count
+  dtype: float64
+  unit: count
+  group: tcp_flags
+  meaning: Packets with ECE set. [VERIFY] count vs 0/1 indicator.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: down_up_ratio
+  source_column: Down/Up Ratio
+  dtype: float64
+  unit: ratio
+  group: volume
+  meaning: Ratio of backward to forward packets. [VERIFY] integer vs float division in the extractor.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: avg_packet_size
+  source_column: Average Packet Size
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Average packet size over the flow.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_segment_size_avg
+  source_column: Fwd Segment Size Avg
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Average forward segment size.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_segment_size_avg
+  source_column: Bwd Segment Size Avg
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Average backward segment size.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_bytes_per_bulk_avg
+  source_column: Fwd Bytes/Bulk Avg
+  dtype: float64
+  unit: bytes
+  group: bulk
+  meaning: Average bytes per bulk transfer, forward.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_packets_per_bulk_avg
+  source_column: Fwd Packet/Bulk Avg
+  dtype: float64
+  unit: packets
+  group: bulk
+  meaning: Average packets per bulk transfer, forward.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_bulk_rate_avg
+  source_column: Fwd Bulk Rate Avg
+  dtype: float64
+  unit: bytes per second
+  group: bulk
+  meaning: Average bulk transfer rate, forward.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_bytes_per_bulk_avg
+  source_column: Bwd Bytes/Bulk Avg
+  dtype: float64
+  unit: bytes
+  group: bulk
+  meaning: Average bytes per bulk transfer, backward.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_packets_per_bulk_avg
+  source_column: Bwd Packet/Bulk Avg
+  dtype: float64
+  unit: packets
+  group: bulk
+  meaning: Average packets per bulk transfer, backward.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_bulk_rate_avg
+  source_column: Bwd Bulk Rate Avg
+  dtype: float64
+  unit: bytes per second
+  group: bulk
+  meaning: Average bulk transfer rate, backward.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: subflow_fwd_packets
+  source_column: Subflow Fwd Packets
+  dtype: float64
+  unit: packets
+  group: subflow
+  meaning: Average forward packets per subflow.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: subflow_fwd_bytes
+  source_column: Subflow Fwd Bytes
+  dtype: float64
+  unit: bytes
+  group: subflow
+  meaning: Average forward bytes per subflow.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: subflow_bwd_packets
+  source_column: Subflow Bwd Packets
+  dtype: float64
+  unit: packets
+  group: subflow
+  meaning: Average backward packets per subflow.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: subflow_bwd_bytes
+  source_column: Subflow Bwd Bytes
+  dtype: float64
+  unit: bytes
+  group: subflow
+  meaning: Average backward bytes per subflow.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_init_win_bytes
+  source_column: FWD Init Win Bytes
+  dtype: float64
+  unit: bytes
+  group: tcp_window
+  meaning: TCP window size in the first forward packet. [VERIFY] sentinel value (expected -1) when not TCP / not
+    observed.
+  expected_range:
+    min: -1
+    max: 65535
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_init_win_bytes
+  source_column: Bwd Init Win Bytes
+  dtype: float64
+  unit: bytes
+  group: tcp_window
+  meaning: TCP window size in the first backward packet. [VERIFY] sentinel value (expected -1) when not TCP / not
+    observed.
+  expected_range:
+    min: -1
+    max: 65535
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_active_data_packets
+  source_column: Fwd Act Data Pkts
+  dtype: float64
+  unit: packets
+  group: volume
+  meaning: Forward packets carrying at least 1 byte of payload.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_active_data_packets
+  source_column: Bwd Act Data Pkts
+  dtype: float64
+  unit: packets
+  group: volume
+  meaning: Backward packets carrying at least 1 byte of payload.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_seg_size_min
+  source_column: Fwd Seg Size Min
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Minimum forward segment size. [VERIFY] exact definition in FlowFeature/BasicFlow source (header vs payload
+    size).
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_seg_size_min
+  source_column: Bwd Seg Size Min
+  dtype: float64
+  unit: bytes
+  group: packet_size
+  meaning: Minimum backward segment size. [VERIFY] exact definition in BasicFlow source.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: active_mean
+  source_column: Active Mean
+  dtype: float64
+  unit: microseconds
+  group: activity
+  meaning: Mean time the flow was active before becoming idle (activity timeout).
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: active_std
+  source_column: Active Std
+  dtype: float64
+  unit: microseconds
+  group: activity
+  meaning: Standard deviation of active periods.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: active_max
+  source_column: Active Max
+  dtype: float64
+  unit: microseconds
+  group: activity
+  meaning: Longest active period.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: active_min
+  source_column: Active Min
+  dtype: float64
+  unit: microseconds
+  group: activity
+  meaning: Shortest active period.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: idle_mean
+  source_column: Idle Mean
+  dtype: float64
+  unit: microseconds
+  group: activity
+  meaning: Mean idle period between active periods.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: idle_std
+  source_column: Idle Std
+  dtype: float64
+  unit: microseconds
+  group: activity
+  meaning: Standard deviation of idle periods.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: idle_max
+  source_column: Idle Max
+  dtype: float64
+  unit: microseconds
+  group: activity
+  meaning: Longest idle period.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: idle_min
+  source_column: Idle Min
+  dtype: float64
+  unit: microseconds
+  group: activity
+  meaning: Shortest idle period.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: 'Fork fix: no longer encodes an absolute timestamp (fork README).'
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: fwd_tcp_retrans_count
+  source_column: Fwd TCP Retrans. Count
+  dtype: float64
+  unit: count
+  group: tcp_retrans
+  meaning: TCP retransmissions detected in the forward direction.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: bwd_tcp_retrans_count
+  source_column: Bwd TCP Retrans. Count
+  dtype: float64
+  unit: count
+  group: tcp_retrans
+  meaning: TCP retransmissions detected in the backward direction.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: total_tcp_retrans_count
+  source_column: Total TCP Retrans. Count
+  dtype: float64
+  unit: count
+  group: tcp_retrans
+  meaning: TCP retransmissions, both directions.
+  expected_range:
+    min: 0
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: true
+  status: draft
+  notes: null
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+excluded_features:
+- name: icmp_code
+  source_column: ICMP Code
+  dtype: float64
+  unit: null
+  group: icmp
+  meaning: ICMP code field. [VERIFY] value used for non-ICMP flows.
+  expected_range:
+    min: null
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: false
+  status: draft
+  notes: Excluded until the non-ICMP sentinel value and encoding are confirmed in EDA.
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: icmp_type
+  source_column: ICMP Type
+  dtype: float64
+  unit: null
+  group: icmp
+  meaning: ICMP type field. [VERIFY] value used for non-ICMP flows.
+  expected_range:
+    min: null
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: false
+  status: draft
+  notes: Excluded until the non-ICMP sentinel value and encoding are confirmed in EDA.
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+- name: total_connection_flow_time
+  source_column: Total Connection Flow Time
+  dtype: float64
+  unit: null
+  group: unknown
+  meaning: '[VERIFY] Added in the Engelen fork. Exact definition and unit not yet confirmed from source.'
+  expected_range:
+    min: null
+    max: null
+  missing_values: inf_to_nan_then_train_median
+  scaling:
+    logistic_regression: signed_log1p_then_standard
+    tree_models: none
+  encoding: numeric
+  included: false
+  status: draft
+  notes: Excluded until its definition is confirmed from the fork source code.
+  pcap_available: pinned_extractor_only
+  source: CICFlowMeter, Engelen et al. fork (pinned commit)
+preprocessing:
+  version: 0.1.0
+  inf_handling: Replace +Infinity and -Infinity with NaN.
+  out_of_range_handling: Values outside expected_range become NaN and are counted per class in the data report.
+  missing_handling: NaN replaced by the per-feature median of the TRAINING split (fitted, stored in the preprocessing
+    artifact).
+  derived_features:
+  - name: zero_duration_flag
+    dtype: float64
+    definition: 1.0 if flow_duration == 0 else 0.0
+    reason: Rate features are undefined for zero-duration flows. The flag keeps that information after imputation.
+    pcap_available: same as flow_duration
+  duplicate_handling: Drop exact duplicate rows (features + label) before splitting. Rows with identical features
+    but different labels are dropped and reported as label conflicts.
+  constant_feature_handling: Features constant on the TRAINING split are dropped. The dropped list is stored in
+    the preprocessing artifact, so inference drops the same ones.
+  scaling:
+    logistic_regression: signed_log1p(x) = sign(x) * log1p(|x|), then StandardScaler fitted on training split
+    tree_models: none
+  categorical_encoding: 'protocol: one-hot over fixed categories + ''other''. dst_port: numeric, tree models only.'
+  dtype_policy: All model inputs are cast to float64 after validation. Non-numeric values in a numeric column fail
+    validation (the row is not silently coerced).
+  feature_order: Model input order = order of `features` below, minus constant-dropped features, plus derived features
+    appended in listed order. The final order is stored in the preprocessing artifact and checked at inference.
+output_vocabulary:
+  allowed_terms:
+  - benign
+  - attack
+  - attack category
+  - suspected
+  - confidence
+  notes: Class names shown to users must come from label_maps in the experiment config, which map only to labels
+    present in the dataset.
