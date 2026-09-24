@@ -70,6 +70,14 @@ def test_every_observed_track_a_label_has_an_exact_mapping(name: str, repo_root:
     assert exp.unknown_label_policy == "fail"
 
 
+def test_track_a_binary_and_family_have_identical_label_keys(repo_root: Path) -> None:
+    # Both tasks must accept exactly the same raw labels. Key order is not compared: it only sets
+    # each experiment's own class display order and has no meaning across experiments.
+    binary = _track_a("track_a_binary", repo_root).label_map
+    family = _track_a("track_a_multiclass_family", repo_root).label_map
+    assert set(binary) == set(family)
+
+
 @pytest.mark.parametrize("name", TRACK_A_EXPERIMENTS)
 def test_track_a_attempted_flows_map_to_benign_and_never_form_a_class(name: str, repo_root: Path) -> None:
     exp = _track_a(name, repo_root)
