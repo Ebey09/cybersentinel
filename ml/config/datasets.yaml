@@ -47,7 +47,7 @@ datasets:
     # SHA-256: independently computed by the project owner (the publisher gives no SHA-256).
     files:
       - {name: Darknet.CSV, md5: 14ddd66fd7915b1262a45de66a9f3842, md5_status: verified_against_publisher, sha256: 1014c1edacfb9af57606e5d87cae480f997808c8e3721bec03093f41e66d3aa3, sha256_status: independently_computed, rows: 158616, columns: 85}
-    # Raw label counts as observed by the project owner, exact spelling (no normalization). Two raw columns are
+    # Raw label counts, exact spelling (no normalization), reproduced by `cybersentinel-ml data-quality` (exit 0). Two raw columns are
     # named 'Label'; the second is 'Label (column 84)' after the declared positional rename (ADR 0011).
     observed_labels:
       Label:

@@ -32,7 +32,7 @@ See [ADR 0001](adr/0001-two-separate-analytical-tracks.md). In short: no shared 
 
 ## Class distribution
 
-**Track A file hashes, row counts and raw label counts are recorded below. Track B raw label counts and observations are recorded below.** Counts are computed from the downloaded files by `cybersentinel-ml inspect-labels` (now) and by the Phase 4 data report (later), and then copied here with the file SHA-256 they came from. Numbers quoted from papers do not agree with each other (one Darknet2020 paper gives two different totals), so none are hardcoded.
+**Track A file hashes, row counts and raw label counts are recorded below, as are the Track B raw label counts and data-quality measurements.** Counts are computed from the downloaded files by `cybersentinel-ml inspect-labels` (now) and by the Phase 4 data report (later), and then copied here with the file SHA-256 they came from. Numbers quoted from papers do not agree with each other (one Darknet2020 paper gives two different totals), so none are hardcoded.
 
 | Dataset file | SHA-256 | Class counts | Source of counts |
 |---|---|---|---|
@@ -42,7 +42,7 @@ See [ADR 0001](adr/0001-two-separate-analytical-tracks.md). In short: no shared 
 | Track A `thursday.csv` (362,076 rows, 91 columns) | `78a4d11eaf473d099e30e71ddb01e0f38218e844c0a9cdd36602145d674af482` | see Track A raw label counts below | `inspect-labels` output |
 | Track A `friday.csv` (547,557 rows, 91 columns) | `ebd499e6f23bd59f9cb81bec28178491b02b925fa5640a24215c9437d79482d0` | see Track A raw label counts below | `inspect-labels` output |
 | Track A `CICIDS2017_improved.zip` (archive) | `97fdb91d339e2d8cf5627f981b831e5e7e400b981c58181c451a38fd03c48883` (previously hashed by the project owner; not re-hashed in the V3/V5/V7 verification) | n/a | n/a |
-| Track B `Darknet.CSV` (158,616 rows, 85 columns) | `1014c1edacfb9af57606e5d87cae480f997808c8e3721bec03093f41e66d3aa3` (independently computed). Publisher MD5 `14ddd66fd7915b1262a45de66a9f3842` also matched | see Track B raw label counts below | raw label counts as observed by the project owner |
+| Track B `Darknet.CSV` (158,616 rows, 85 columns) | `1014c1edacfb9af57606e5d87cae480f997808c8e3721bec03093f41e66d3aa3` (independently computed). Publisher MD5 `14ddd66fd7915b1262a45de66a9f3842` also matched | see Track B raw label counts below | `cybersentinel-ml data-quality` output |
 
 ### Track A raw label counts (CNS2022 release)
 
@@ -79,39 +79,67 @@ Raw `Label` values exactly as spelled in the files, counted by `cybersentinel-ml
 | `Botnet - Attempted` |  |  |  |  | 4,067 | 4,067 |
 | **Rows** | **371,624** | **322,078** | **496,641** | **362,076** | **547,557** | **2,099,976** |
 
-### Track B raw label counts and observations (CIC-Darknet2020)
+### Track B raw label counts and data-quality measurements (CIC-Darknet2020)
 
-`Darknet.CSV`: 158,616 data rows, 85 columns. Publisher MD5 `14ddd66fd7915b1262a45de66a9f3842` (from `Darknet.md5`) matched an independently computed MD5 (publisher verification). Independently computed SHA-256: `1014c1edacfb9af57606e5d87cae480f997808c8e3721bec03093f41e66d3aa3`. Counts are raw values exactly as spelled in the file, as observed by the project owner. They are not model classes. Each raw value is mapped explicitly in the label maps (V6); nothing is normalized in the data.
+`Darknet.CSV`: 158,616 data rows, 85 raw columns, no short or long rows. Publisher MD5 `14ddd66fd7915b1262a45de66a9f3842` (from `Darknet.md5`) matched an independently computed MD5 (publisher verification). Independently computed SHA-256: `1014c1edacfb9af57606e5d87cae480f997808c8e3721bec03093f41e66d3aa3`.
 
-| First `Label` (traffic type) | Rows |
-|---|---:|
-| `Non-Tor` | 110,442 |
-| `NonVPN` | 23,863 |
-| `VPN` | 22,919 |
-| `Tor` | 1,392 |
-| **Total** | **158,616** |
+All numbers below come from `cybersentinel-ml data-quality --schema config/schemas/track_b_darknet2020.yaml --csv Darknet.CSV --json darknet_quality.json` (schema v0.2.4, exit code 0). The diagnostic only reads the file: no rows were dropped, imputed, de-duplicated or normalized. Raw values keep their exact spelling. The repeated raw header `Label` at position 84 was resolved by the declared positional rename to `Label (column 84)` (ADR 0011).
 
-| Second `Label` (application category) | Rows |
-|---|---:|
-| `P2P` | 48,520 |
-| `Browsing` | 46,457 |
-| `Audio-Streaming` | 19,830 |
-| `Chat` | 11,629 |
-| `File-Transfer` | 11,098 |
-| `Video-Streaming` | 9,486 |
-| `Email` | 6,145 |
-| `VOIP` | 3,566 |
-| `AUDIO-STREAMING` | 1,520 |
-| `Video-streaming` | 281 |
-| `File-transfer` | 84 |
-| **Total** | **158,616** |
+**Raw observations: labels**
 
-Data-quality observations (recorded only; nothing dropped, imputed or de-duplicated):
+| First `Label` (traffic type) | Rows | % |
+|---|---:|---:|
+| `Non-Tor` | 110,442 | 69.6285 |
+| `NonVPN` | 23,863 | 15.0445 |
+| `VPN` | 22,919 | 14.4494 |
+| `Tor` | 1,392 | 0.8776 |
+| **Total** | **158,616** | |
 
-- 48 rows contain NaN, all involving `Flow Bytes/s`.
-- 50 rows contain infinity: `Flow Packets/s` 50 occurrences, `Flow Bytes/s` 2 occurrences.
-- 39,004 exact duplicate rows.
-- 79,160 unique Flow IDs; 79,456 duplicated Flow ID occurrences.
+| Second `Label` (application category) | Rows | % |
+|---|---:|---:|
+| `P2P` | 48,520 | 30.5896 |
+| `Browsing` | 46,457 | 29.2890 |
+| `Audio-Streaming` | 19,830 | 12.5019 |
+| `Chat` | 11,629 | 7.3315 |
+| `File-Transfer` | 11,098 | 6.9968 |
+| `Video-Streaming` | 9,486 | 5.9805 |
+| `Email` | 6,145 | 3.8741 |
+| `VOIP` | 3,566 | 2.2482 |
+| `AUDIO-STREAMING` | 1,520 | 0.9583 |
+| `Video-streaming` | 281 | 0.1772 |
+| `File-transfer` | 84 | 0.0530 |
+| **Total** | **158,616** | |
+
+**Raw observations: data quality**
+
+| Measurement | Result |
+|---|---|
+| Missing values (empty or NaN in numeric columns) | 48 rows; all 48 in `Flow Bytes/s` |
+| Infinity | 50 rows with any infinity: `Flow Packets/s` +inf 50, `Flow Bytes/s` +inf 2; no -inf |
+| Non-numeric text in numeric columns | none |
+| Exact duplicate rows | 39,004 extra copies (occurrences after the first); 78,008 rows in duplicate groups; 39,004 groups |
+| Flow ID | 79,160 unique; 36,933 IDs occur more than once; 116,389 rows carry a repeated ID; 79,456 extra occurrences (after the first) |
+| `Protocol` | `6`: 96,482; `17`: 61,310; `0`: 824 |
+| `FWD Init Win Bytes`, `Bwd Init Win Bytes` | 0 values below zero in either column |
+| `Active Mean/Std/Max/Min` | all four: min 0, median 0, max 0 |
+| `Idle Mean` | median 728,165,088,168,827.5; max 1,456,416,798,260,755; 81,330 values >= 1e12; 68,819 in the epoch-microsecond range 2014-2020 |
+| `Idle Std` | max 1,029,835,600,802,160; 15,439 values >= 1e12; 0 in the epoch range |
+| `Idle Max` | median 1,427,909,433,629,094.5; max 1,456,416,800,693,713; 81,330 values >= 1e12; all 81,330 in the epoch range |
+| `Idle Min` | max 1,456,416,797,545,352; 65,891 values >= 1e12; all 65,891 in the epoch range |
+| `Fwd PSH Flags` | only 0 and 1; 90.4902% zero |
+| `Bwd PSH Flags`, `Fwd URG Flags`, `Bwd URG Flags` | always 0 |
+| Flag counts | FIN max 2 (3 distinct), SYN max 7 (6), RST max 71 (13), PSH max 48,025 (1,685), ACK max 709,023 (2,603); URG, CWE, ECE always 0 |
+| `Down/Up Ratio` | all 158,616 values integer-valued; 0 non-integer |
+
+**Interpretation** (what the measurements support, not causes):
+
+- Tor is 0.88% of rows: strong class imbalance for the traffic-type task.
+- Every exact-duplicate group is a pair (groups = extra copies). The diagnostic does not show why rows repeat, or why Flow IDs repeat.
+- The `Idle *` magnitudes match epoch times in microseconds (for example 1,456,416,800,693,713 us is in February 2016). This matches the upstream Active/Idle behaviour that ADR 0005 and the Engelen fork README describe, but the diagnostic does not prove the cause for this file. All four `Active *` columns are constant 0.
+- The flag-count columns other than URG, CWE and ECE take values above 1, so they behave as counts, not 0/1 indicators. URG, CWE, ECE and three of the four directional PSH/URG columns are constant 0 in this file.
+- Whether the NaN and infinity rows are zero-duration flows was not measured.
+
+**Preprocessing decisions:** none made here. The existing schema exclusions (Active/Idle x8, directional PSH/URG x4) and the preprocessing policy in `ML_DATA_CONTRACT.md` are unchanged. De-duplication, constant-column handling and the treatment of NaN/infinity are decided in Phase 4.
 
 ## Terms and redistribution
 
