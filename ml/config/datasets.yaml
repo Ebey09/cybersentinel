@@ -39,8 +39,31 @@ datasets:
     original_homepage: https://www.unb.ca/cic/datasets/darknet2020.html
     extractor: "CICFlowMeter, upstream (https://github.com/ahlashkari/CICFlowMeter). [VERIFY] V25 exact version: not documented in the sources checked. If it stays undocumented, record it as not_documented (ADR 0010), never guess."
     acquisition:
-      option_1: "Download the CSV from UNB CIC (registration form). [VERIFY] current process and file name."
-    terms: "[VERIFY] read the UNB CIC terms of use on the dataset page. Do not commit dataset rows to git."
+      option_1: "Download the CSV from UNB CIC (registration form). Published file: Darknet.CSV with Darknet.md5."
+    terms: "Per the official dataset page (text supplied by the project owner): the dataset may be redistributed, republished and mirrored, provided the use or redistribution includes the required CICDarknet2020 citation and the DIDarknet paper citation. Do not commit dataset rows to git."
     citations:
       - "Habibi Lashkari, Kaur, Rahali. DIDarknet: A Contemporary Approach to Detect and Characterize the Darknet Traffic using Deep Image Learning. ICCNS 2020. [VERIFY] citation text on the dataset page."
-    files: []
+    # MD5: the publisher's value (Darknet.md5) matched an independently computed MD5.
+    # SHA-256: independently computed by the project owner (the publisher gives no SHA-256).
+    files:
+      - {name: Darknet.CSV, md5: 14ddd66fd7915b1262a45de66a9f3842, md5_status: verified_against_publisher, sha256: 1014c1edacfb9af57606e5d87cae480f997808c8e3721bec03093f41e66d3aa3, sha256_status: independently_computed, rows: 158616, columns: 85}
+    # Raw label counts as observed by the project owner, exact spelling (no normalization). Two raw columns are
+    # named 'Label'; the second is 'Label (column 84)' after the declared positional rename (ADR 0011).
+    observed_labels:
+      Label:
+        Non-Tor: 110442
+        NonVPN: 23863
+        VPN: 22919
+        Tor: 1392
+      Label (column 84):
+        P2P: 48520
+        Browsing: 46457
+        Audio-Streaming: 19830
+        Chat: 11629
+        File-Transfer: 11098
+        Video-Streaming: 9486
+        Email: 6145
+        VOIP: 3566
+        AUDIO-STREAMING: 1520
+        Video-streaming: 281
+        File-transfer: 84

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
+import yaml
 
 from cybersentinel_ml.contract.schema import FeatureSchema, SchemaStatus
 
@@ -161,3 +164,37 @@ def test_track_a_matches_the_published_cns2022_layout(schema_a: FeatureSchema) -
     # The generation commit is not documented, so it must not look pinned.
     assert schema_a.extractor.commit_status == "to_verify"
     assert not schema_a.extractor.is_pinned
+
+
+def test_track_b_duplicate_raw_label_is_explicit(schema_b: FeatureSchema) -> None:
+    # Darknet.CSV has two columns literally named "Label" (ADR 0011). "Label.1" is a pandas name, never a source name.
+    header = schema_b.expected_raw_header()
+    assert len(header) == 85
+    assert [i for i, c in enumerate(header) if c == "Label"] == [83, 84]
+    assert "Label.1" not in header and "Label.1" not in schema_b.raw_columns
+    assert [(r.position, r.raw_name) for r in schema_b.positional_renames] == [(84, "Label")]
+    roles = {lab.name: lab.source_column for lab in schema_b.label_columns}
+    assert roles == {"traffic_type": "Label", "application_category": "Label (column 84)"}
+
+
+def test_track_b_observed_raw_labels_are_recorded_exactly(schema_b: FeatureSchema, repo_root: Path) -> None:
+    registry = yaml.safe_load((repo_root / "ml/config/datasets.yaml").read_text(encoding="utf-8"))
+    darknet = next(d for d in registry["datasets"] if d["id"] == "cic_darknet2020")
+    observed = darknet["observed_labels"]
+    assert list(observed) == [lab.source_column for lab in schema_b.label_columns]
+    assert set(observed["Label"]) == {"Non-Tor", "NonVPN", "VPN", "Tor"}
+    # Case variants are distinct raw values until a normalization decision is recorded (V6).
+    assert {"Audio-Streaming", "AUDIO-STREAMING", "Video-Streaming", "Video-streaming"} <= set(
+        observed["Label (column 84)"]
+    )
+    assert {"File-Transfer", "File-transfer"} <= set(observed["Label (column 84)"])
+    rows = darknet["files"][0]["rows"]
+    assert all(sum(counts.values()) == rows == 158616 for counts in observed.values())
+
+
+def test_track_b_uses_the_published_cwe_flag_count_header(schema_b: FeatureSchema) -> None:
+    # Darknet.CSV spells this column "CWE Flag Count" (pre-2b7be26 upstream header); the feature is the CWR flag count.
+    assert "CWE Flag Count" in schema_b.raw_columns
+    assert "CWR Flag Count" not in schema_b.raw_columns
+    feature = next(f for f in schema_b.features if f.source_column == "CWE Flag Count")
+    assert feature.name == "cwr_flag_count"

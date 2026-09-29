@@ -12,6 +12,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versio
 - VERIFY V25: Track B extractor version
 
 ### Changed
+- Track B schema v0.2.2: raw column `CWE Flag Count` as spelled in `Darknet.CSV` (was `CWR Flag Count`, upstream's later header); canonical name `cwr_flag_count` kept. Darknet.CSV SHA-256 recorded
+- Track B schema v0.2.1 (text only): the published `Darknet.CSV` (85 columns, 158,616 rows, publisher MD5 verified) has two columns named `Label`, handled by the declared positional rename; `Label.1` is not a source name. Observed raw label values and counts, data-quality observations and the redistribution licence recorded. Label maps unchanged (V6 open), extractor stays `to_verify` (V25)
 - Track A label maps use the 27 raw labels observed in the CNS2022 CSVs (V5), replacing the WTMC 2021 spellings (`DoS Slowloris`, `Web Attack - SQL Injection`, `Portscan`, `Botnet` and Attempted variants). `Infiltration - Portscan` added as ATTACK / PORTSCAN. Attempted labels stay BENIGN
 - Track A schema v0.3.0 describes the published 91-column CNS2022 layout: `id` (identifier) and `Attempted Category` (label side) added, `Total TCP Flow Time` excluded pending V16, six later fork columns removed. 80 model features. Extractor stays `to_verify`, pcapfix and reordercap recorded
 - Both schemas to v0.2.0. Track B's second label column is no longer assumed to be called `Label.1`

@@ -2,18 +2,21 @@
 # Source of truth for training AND inference. Validated by cybersentinel_ml.contract.
 # status: draft -> training and inference refuse to run until it is 'verified'.
 # Column list taken from FlowFeature.java in github.com/ahlashkari/CICFlowMeter (current master, 84 columns incl. Label)
-# plus a second label column. The raw name of that column is unverified: the draft assumes the file repeats 'Label',
-# declared in positional_renames (ADR 0011). The real CSV header must be checked before this becomes 'verified'.
+# plus a second label column. The published Darknet.CSV has 85 columns and two columns literally named 'Label'
+# (observed); the second is declared in positional_renames (ADR 0011). 'Label.1' is a pandas name, not the source name.
+# Run check-header on Darknet.CSV (V4) before this becomes 'verified'.
 
 schema_id: track_b.cicdarknet2020
-schema_version: 0.2.0
+schema_version: 0.2.2
 status: draft
 track: B
 title: 'Track B: Darknet/VPN traffic characterization (CIC-Darknet2020)'
 dataset:
   name: CIC-Darknet2020
   homepage: https://www.unb.ca/cic/datasets/darknet2020.html
-  release: Single CSV release from UNB CIC. [VERIFY] file name and SHA-256 after download.
+  release: 'Single CSV release from UNB CIC: Darknet.CSV, 158,616 data rows, 85 columns. Publisher MD5 (Darknet.md5)
+    14ddd66fd7915b1262a45de66a9f3842 matched an independently computed MD5. Independently computed SHA-256:
+    1014c1edacfb9af57606e5d87cae480f997808c8e3721bec03093f41e66d3aa3.'
 extractor:
   name: CICFlowMeter (upstream, ahlashkari)
   repository: https://github.com/ahlashkari/CICFlowMeter
@@ -89,7 +92,7 @@ raw_columns:
 - PSH Flag Count
 - ACK Flag Count
 - URG Flag Count
-- CWR Flag Count
+- CWE Flag Count
 - ECE Flag Count
 - Down/Up Ratio
 - Average Packet Size
@@ -123,9 +126,9 @@ positional_renames:
 - position: 84
   raw_name: Label
   resolved_name: Label (column 84)
-  reason: '[VERIFY] V4. Draft assumption: the raw CSV names both label columns ''Label'' (traffic type, then
-    application category). ''Label.1'' is what pandas would call the second one, not a name taken from the file. If
-    the real header gives the second column its own name, use that name in raw_columns and delete this rename.'
+  reason: 'Observed in the published Darknet.CSV: the header has two columns literally named ''Label'' (traffic
+    type, then application category). ''Label.1'' is only what pandas would call the second one, not a source name.
+    [VERIFY] V4: confirm positions and full order with check-header.'
 identifier_columns:
 - name: flow_id
   source_column: Flow ID
@@ -177,12 +180,14 @@ identifier_columns:
 label_columns:
 - source_column: Label
   name: traffic_type
-  notes: '[VERIFY] exact strings. Literature reports Tor, Non-Tor, VPN, Non-VPN.'
+  notes: 'Observed raw values (exact spelling): Non-Tor, NonVPN, VPN, Tor. Counts in docs/DATASETS.md. [VERIFY] V6:
+    the experiment label maps use Non-VPN, which does not match the raw NonVPN.'
 - source_column: Label (column 84)
   name: application_category
-  notes: '[VERIFY] V4: raw column name (see positional_renames). V6: exact strings and casing. Eight categories are
-    reported: audio streaming, browsing, chat, email, file transfer, P2P, video streaming, VoIP. The raw spelling is
-    not confirmed (for example ''File Transfer'' vs ''File-Transfer'').'
+  notes: 'Second raw column named Label (see positional_renames). Observed raw values (exact spelling, case variants
+    kept): P2P, Browsing, Audio-Streaming, AUDIO-STREAMING, Chat, File-Transfer, File-transfer, Video-Streaming,
+    Video-streaming, Email, VOIP. Counts in docs/DATASETS.md. [VERIFY] V6: the case variants are not in the label map
+    yet; the normalization decision is pending.'
 features:
 - name: dst_port
   source_column: Dst Port
@@ -1064,7 +1069,7 @@ features:
   pcap_available: unverified
   source: CICFlowMeter, original upstream version used by CIC in 2020 ([VERIFY] exact version)
 - name: cwr_flag_count
-  source_column: CWR Flag Count
+  source_column: CWE Flag Count
   dtype: float64
   unit: count
   group: tcp_flags
@@ -1079,7 +1084,9 @@ features:
   encoding: numeric
   included: true
   status: draft
-  notes: null
+  notes: 'Raw header in the published Darknet.CSV is ''CWE Flag Count''. Upstream CICFlowMeter used that header until
+    commit 2b7be26 renamed it to ''CWR Flag Count''; the source history shows the CWR flag-count computation unchanged
+    by that commit. 2b7be26 is not the dataset extractor commit (V25 stays to_verify).'
   pcap_available: unverified
   source: CICFlowMeter, original upstream version used by CIC in 2020 ([VERIFY] exact version)
 - name: ece_flag_count

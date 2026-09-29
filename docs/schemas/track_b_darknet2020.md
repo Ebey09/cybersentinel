@@ -2,8 +2,8 @@
 
 > Generated from the schema YAML by `cybersentinel-ml schema-docs`. Do not edit by hand.
 
-- Schema: `track_b.cicdarknet2020` v0.2.0 (status: **draft**)
-- Content SHA-256: `d38afd3e0cad53d069314a1d5c455366f900b3e06820e2ce87b3cbb497dba5ce`
+- Schema: `track_b.cicdarknet2020` v0.2.2 (status: **draft**)
+- Content SHA-256: `9dd58f81459b9857b539f476e425878488d7cf94172a6d468f476eb3a9b3cae2`
 - Dataset: CIC-Darknet2020
 - Extractor: CICFlowMeter (upstream, ahlashkari), commit `[VERIFY] unknown. The version CIC used in 2020 is not documented in the sources checked.` (commit status: **to_verify**)
 - Flow timeout: None us, activity timeout: None us
@@ -61,7 +61,7 @@
 | 44 | `psh_flag_count` | PSH Flag Count | float64 | count | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | unverified | draft | Packets with PSH set. [VERIFY] count vs 0/1 indicator.  |
 | 45 | `ack_flag_count` | ACK Flag Count | float64 | count | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | unverified | draft | Packets with ACK set. [VERIFY] count vs 0/1 indicator.  |
 | 46 | `urg_flag_count` | URG Flag Count | float64 | count | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | unverified | draft | Packets with URG set. [VERIFY] count vs 0/1 indicator.  |
-| 47 | `cwr_flag_count` | CWR Flag Count | float64 | count | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | unverified | draft | Packets with CWR set. [VERIFY] count vs 0/1 indicator.  |
+| 47 | `cwr_flag_count` | CWE Flag Count | float64 | count | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | unverified | draft | Packets with CWR set. [VERIFY] count vs 0/1 indicator. Raw header in the published Darknet.CSV is 'CWE Flag Count'. Upstream CICFlowMeter used that header until commit 2b7be26 renamed it to 'CWR Flag Count'; the source history shows the CWR flag-count computation unchanged by that commit. 2b7be26 is not the dataset extractor commit (V25 stays to_verify). |
 | 48 | `ece_flag_count` | ECE Flag Count | float64 | count | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | unverified | draft | Packets with ECE set. [VERIFY] count vs 0/1 indicator.  |
 | 49 | `down_up_ratio` | Down/Up Ratio | float64 | ratio | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | unverified | draft | Ratio of backward to forward packets. [VERIFY] integer vs float division in the extractor.  |
 | 50 | `avg_packet_size` | Average Packet Size | float64 | bytes | [0.0, inf] | inf_to_nan_then_train_median | signed_log1p_then_standard | numeric | unverified | draft | Average packet size over the flow.  |
@@ -115,12 +115,12 @@
 
 ## Positional renames (declared, applied by the dataset adapter)
 
-- Position 84: raw `Label` -> `Label (column 84)`. [VERIFY] V4. Draft assumption: the raw CSV names both label columns 'Label' (traffic type, then application category). 'Label.1' is what pandas would call the second one, not a name taken from the file. If the real header gives the second column its own name, use that name in raw_columns and delete this rename.
+- Position 84: raw `Label` -> `Label (column 84)`. Observed in the published Darknet.CSV: the header has two columns literally named 'Label' (traffic type, then application category). 'Label.1' is only what pandas would call the second one, not a source name. [VERIFY] V4: confirm positions and full order with check-header.
 
 ## Label columns
 
-- `Label` -> `traffic_type`. [VERIFY] exact strings. Literature reports Tor, Non-Tor, VPN, Non-VPN.
-- `Label (column 84)` -> `application_category`. [VERIFY] V4: raw column name (see positional_renames). V6: exact strings and casing. Eight categories are reported: audio streaming, browsing, chat, email, file transfer, P2P, video streaming, VoIP. The raw spelling is not confirmed (for example 'File Transfer' vs 'File-Transfer').
+- `Label` -> `traffic_type`. Observed raw values (exact spelling): Non-Tor, NonVPN, VPN, Tor. Counts in docs/DATASETS.md. [VERIFY] V6: the experiment label maps use Non-VPN, which does not match the raw NonVPN.
+- `Label (column 84)` -> `application_category`. Second raw column named Label (see positional_renames). Observed raw values (exact spelling, case variants kept): P2P, Browsing, Audio-Streaming, AUDIO-STREAMING, Chat, File-Transfer, File-transfer, Video-Streaming, Video-streaming, Email, VOIP. Counts in docs/DATASETS.md. [VERIFY] V6: the case variants are not in the label map yet; the normalization decision is pending.
 
 ## Output vocabulary
 
