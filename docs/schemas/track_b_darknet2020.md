@@ -2,8 +2,8 @@
 
 > Generated from the schema YAML by `cybersentinel-ml schema-docs`. Do not edit by hand.
 
-- Schema: `track_b.cicdarknet2020` v0.2.3 (status: **draft**)
-- Content SHA-256: `c1e2cd790eb96993656e7480b4193aa2fb9d1eeef9ab75191621661ff60ef59e`
+- Schema: `track_b.cicdarknet2020` v0.2.4 (status: **draft**)
+- Content SHA-256: `4c1a756def10ae26f53a25ac3409e8c99de7cf83bb5f0ce5f087d924ad479e92`
 - Dataset: CIC-Darknet2020
 - Extractor: CICFlowMeter (upstream, ahlashkari), commit `[VERIFY] unknown. The version CIC used in 2020 is not documented in the sources checked.` (commit status: **to_verify**)
 - Flow timeout: None us, activity timeout: None us
@@ -115,7 +115,7 @@
 
 ## Positional renames (declared, applied by the dataset adapter)
 
-- Position 84: raw `Label` -> `Label (column 84)`. Observed in the published Darknet.CSV: the header has two columns literally named 'Label' (traffic type, then application category). 'Label.1' is only what pandas would call the second one, not a source name. [VERIFY] V4: confirm positions and full order with check-header.
+- Position 84: raw `Label` -> `Label (column 84)`. Observed in the published Darknet.CSV: the header has two columns literally named 'Label' (traffic type, then application category). 'Label.1' is only what pandas would call the second one, not a source name. V4 verified: check-header confirmed the duplicate Label at position 84 and the full column order against the published Darknet.CSV.
 
 ## Label columns
 

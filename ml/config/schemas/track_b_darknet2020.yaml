@@ -4,10 +4,11 @@
 # Column list taken from FlowFeature.java in github.com/ahlashkari/CICFlowMeter (current master, 84 columns incl. Label)
 # plus a second label column. The published Darknet.CSV has 85 columns and two columns literally named 'Label'
 # (observed); the second is declared in positional_renames (ADR 0011). 'Label.1' is a pandas name, not the source name.
-# Run check-header on Darknet.CSV (V4) before this becomes 'verified'.
+# V4 VERIFIED: check-header confirmed the real Darknet.CSV header matches this schema (85 columns, full order,
+# duplicate Label resolved by position). The schema stays draft until the remaining VERIFY items are closed.
 
 schema_id: track_b.cicdarknet2020
-schema_version: 0.2.3
+schema_version: 0.2.4
 status: draft
 track: B
 title: 'Track B: Darknet/VPN traffic characterization (CIC-Darknet2020)'
@@ -128,7 +129,8 @@ positional_renames:
   resolved_name: Label (column 84)
   reason: 'Observed in the published Darknet.CSV: the header has two columns literally named ''Label'' (traffic
     type, then application category). ''Label.1'' is only what pandas would call the second one, not a source name.
-    [VERIFY] V4: confirm positions and full order with check-header.'
+    V4 verified: check-header confirmed the duplicate Label at position 84 and the full column order against the
+    published Darknet.CSV.'
 identifier_columns:
 - name: flow_id
   source_column: Flow ID
