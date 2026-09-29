@@ -7,7 +7,7 @@
 # Run check-header on Darknet.CSV (V4) before this becomes 'verified'.
 
 schema_id: track_b.cicdarknet2020
-schema_version: 0.2.2
+schema_version: 0.2.3
 status: draft
 track: B
 title: 'Track B: Darknet/VPN traffic characterization (CIC-Darknet2020)'
@@ -180,14 +180,14 @@ identifier_columns:
 label_columns:
 - source_column: Label
   name: traffic_type
-  notes: 'Observed raw values (exact spelling): Non-Tor, NonVPN, VPN, Tor. Counts in docs/DATASETS.md. [VERIFY] V6:
-    the experiment label maps use Non-VPN, which does not match the raw NonVPN.'
+  notes: 'Observed raw values (exact spelling): Non-Tor, NonVPN, VPN, Tor. Counts in docs/DATASETS.md. V6 verified:
+    the experiment label maps use these exact keys.'
 - source_column: Label (column 84)
   name: application_category
   notes: 'Second raw column named Label (see positional_renames). Observed raw values (exact spelling, case variants
     kept): P2P, Browsing, Audio-Streaming, AUDIO-STREAMING, Chat, File-Transfer, File-transfer, Video-Streaming,
-    Video-streaming, Email, VOIP. Counts in docs/DATASETS.md. [VERIFY] V6: the case variants are not in the label map
-    yet; the normalization decision is pending.'
+    Video-streaming, Email, VOIP. Counts in docs/DATASETS.md. V6 verified: every variant is an explicit label-map key
+    mapped to the same class as its main spelling; no generic normalization.'
 features:
 - name: dst_port
   source_column: Dst Port

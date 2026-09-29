@@ -12,7 +12,7 @@ label_map:
   Tor: TOR
   VPN: VPN
   Non-Tor: REGULAR
-  Non-VPN: REGULAR
+  NonVPN: REGULAR
 class_display:
   TOR: Tor traffic detected (policy/risk signal)
   VPN: VPN traffic detected (policy/risk signal)
@@ -59,4 +59,4 @@ ablations:
 - no_dst_port
 - shuffled_labels
 - single_feature_auc
-notes: Label strings are from the literature, not yet from the CSV. [VERIFY] with `cybersentinel-ml inspect-labels`.
+notes: Label keys are the exact raw strings reported by `cybersentinel-ml inspect-labels` on Darknet.CSV (V6).

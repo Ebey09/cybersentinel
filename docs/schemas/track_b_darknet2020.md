@@ -2,8 +2,8 @@
 
 > Generated from the schema YAML by `cybersentinel-ml schema-docs`. Do not edit by hand.
 
-- Schema: `track_b.cicdarknet2020` v0.2.2 (status: **draft**)
-- Content SHA-256: `9dd58f81459b9857b539f476e425878488d7cf94172a6d468f476eb3a9b3cae2`
+- Schema: `track_b.cicdarknet2020` v0.2.3 (status: **draft**)
+- Content SHA-256: `c1e2cd790eb96993656e7480b4193aa2fb9d1eeef9ab75191621661ff60ef59e`
 - Dataset: CIC-Darknet2020
 - Extractor: CICFlowMeter (upstream, ahlashkari), commit `[VERIFY] unknown. The version CIC used in 2020 is not documented in the sources checked.` (commit status: **to_verify**)
 - Flow timeout: None us, activity timeout: None us
@@ -119,8 +119,8 @@
 
 ## Label columns
 
-- `Label` -> `traffic_type`. Observed raw values (exact spelling): Non-Tor, NonVPN, VPN, Tor. Counts in docs/DATASETS.md. [VERIFY] V6: the experiment label maps use Non-VPN, which does not match the raw NonVPN.
-- `Label (column 84)` -> `application_category`. Second raw column named Label (see positional_renames). Observed raw values (exact spelling, case variants kept): P2P, Browsing, Audio-Streaming, AUDIO-STREAMING, Chat, File-Transfer, File-transfer, Video-Streaming, Video-streaming, Email, VOIP. Counts in docs/DATASETS.md. [VERIFY] V6: the case variants are not in the label map yet; the normalization decision is pending.
+- `Label` -> `traffic_type`. Observed raw values (exact spelling): Non-Tor, NonVPN, VPN, Tor. Counts in docs/DATASETS.md. V6 verified: the experiment label maps use these exact keys.
+- `Label (column 84)` -> `application_category`. Second raw column named Label (see positional_renames). Observed raw values (exact spelling, case variants kept): P2P, Browsing, Audio-Streaming, AUDIO-STREAMING, Chat, File-Transfer, File-transfer, Video-Streaming, Video-streaming, Email, VOIP. Counts in docs/DATASETS.md. V6 verified: every variant is an explicit label-map key mapped to the same class as its main spelling; no generic normalization.
 
 ## Output vocabulary
 

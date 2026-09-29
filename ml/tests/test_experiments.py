@@ -121,7 +121,36 @@ def test_track_b_never_uses_harm_vocabulary(repo_root: Path) -> None:
 
 def test_track_b_primary_task_merges_regular_captures(repo_root: Path) -> None:
     exp, _, _ = load_experiment(repo_root / "ml/config/experiments/track_b_traffic_type.yaml", repo_root)
-    assert exp.label_map["Non-Tor"] == exp.label_map["Non-VPN"] == "REGULAR"
+    assert exp.label_map["Non-Tor"] == exp.label_map["NonVPN"] == "REGULAR"
+
+
+TRACK_B_EXPERIMENTS = [
+    "track_b_traffic_type",
+    "track_b_traffic_type_4class_diagnostic",
+    "track_b_application_category",
+]
+
+
+@pytest.mark.parametrize("name", TRACK_B_EXPERIMENTS)
+def test_every_observed_track_b_label_has_an_exact_mapping(name: str, repo_root: Path) -> None:
+    # Observed raw values from Darknet.CSV (V6), recorded per raw label column in datasets.yaml.
+    registry = yaml.safe_load((repo_root / "ml/config/datasets.yaml").read_text(encoding="utf-8"))
+    observed = next(d for d in registry["datasets"] if d["id"] == "cic_darknet2020")["observed_labels"]
+    exp, _, _ = load_experiment(repo_root / f"ml/config/experiments/{name}.yaml", repo_root)
+    assert set(observed[exp.label_column]) == set(exp.label_map)
+    assert exp.unknown_label_policy == "fail"
+
+
+def test_track_b_spelling_variants_share_one_class(repo_root: Path) -> None:
+    # Variants are listed explicitly; they are the same category, not separate classes.
+    exp, _, _ = load_experiment(
+        repo_root / "ml/config/experiments/track_b_application_category.yaml", repo_root
+    )
+    m = exp.label_map
+    assert m["AUDIO-STREAMING"] == m["Audio-Streaming"]
+    assert m["Video-streaming"] == m["Video-Streaming"]
+    assert m["File-transfer"] == m["File-Transfer"]
+    assert len(exp.classes()) == 8
 
 
 def test_forbidden_display_text_is_rejected(repo_root: Path, tmp_path: Path) -> None:

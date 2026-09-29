@@ -47,12 +47,12 @@ def test_check_header_accepts_declared_duplicate_without_renaming(
 
 def test_inspect_labels_reports_unmapped(tmp_path: Path, repo_root: Path, capsys) -> None:  # type: ignore[no-untyped-def]
     f = tmp_path / "labels.csv"
-    _write_csv(f, ["x", "Label"], [["1", "Tor"], ["2", "VPN"], ["3", "NonVPN"], ["4", "Tor"]])
+    _write_csv(f, ["x", "Label"], [["1", "Tor"], ["2", "VPN"], ["3", "Non-VPN"], ["4", "Tor"]])
     exp = str(repo_root / "ml/config/experiments/track_b_traffic_type.yaml")
     code = main(["inspect-labels", "--csv", str(f), "--column", "Label", "--experiment", exp])
     out = capsys.readouterr().out
     assert code == 1
-    assert "'NonVPN'" in out  # a spelling not in the label map is surfaced, not guessed
+    assert "'Non-VPN'" in out  # a spelling not in the label map is surfaced, not guessed
 
 
 def test_inspect_labels_refuses_ambiguous_duplicate_column(tmp_path: Path) -> None:

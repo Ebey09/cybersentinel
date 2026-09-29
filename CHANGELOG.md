@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versio
 - VERIFY V25: Track B extractor version
 
 ### Changed
+- Track B label maps use the exact raw keys from `Darknet.CSV` (V6): `NonVPN` replaces `Non-VPN` in both traffic-type experiments; `AUDIO-STREAMING`, `Video-streaming` and `File-transfer` added as explicit keys mapped to the same class as their main spelling. Track B schema v0.2.3 (label notes only)
 - Track B schema v0.2.2: raw column `CWE Flag Count` as spelled in `Darknet.CSV` (was `CWR Flag Count`, upstream's later header); canonical name `cwr_flag_count` kept. Darknet.CSV SHA-256 recorded
 - Track B schema v0.2.1 (text only): the published `Darknet.CSV` (85 columns, 158,616 rows, publisher MD5 verified) has two columns named `Label`, handled by the declared positional rename; `Label.1` is not a source name. Observed raw label values and counts, data-quality observations and the redistribution licence recorded. Label maps unchanged (V6 open), extractor stays `to_verify` (V25)
 - Track A label maps use the 27 raw labels observed in the CNS2022 CSVs (V5), replacing the WTMC 2021 spellings (`DoS Slowloris`, `Web Attack - SQL Injection`, `Portscan`, `Botnet` and Attempted variants). `Infiltration - Portscan` added as ATTACK / PORTSCAN. Attempted labels stay BENIGN
