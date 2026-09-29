@@ -45,6 +45,11 @@ uv pip install --python .venv/bin/python -e ".[dev]"
   --csv ../data/raw/cic_darknet2020/Darknet.CSV --column Label \
   --experiment config/experiments/track_b_traffic_type.yaml
 
+# Raw-data quality report (measurement only: nothing is dropped, imputed or de-duplicated)
+.venv/bin/cybersentinel-ml data-quality \
+  --schema config/schemas/track_b_darknet2020.yaml \
+  --csv ../data/raw/cic_darknet2020/Darknet.CSV --json ../ml/results/track_b_data_quality.json
+
 # Regenerate the human-readable schema reference
 .venv/bin/cybersentinel-ml schema-docs \
   --schema config/schemas/track_a_cicids2017.yaml --out ../docs/schemas/track_a_cicids2017.md

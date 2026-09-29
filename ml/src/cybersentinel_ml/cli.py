@@ -1,17 +1,19 @@
 """Command-line entry point: `cybersentinel-ml <command>`.
 
-Phase 1 commands only check contracts. They never train or predict.
+These commands only check contracts and measure raw data. They never train or predict.
 
   validate-config   load every schema and experiment config and cross-check them
   check-header      compare a real CSV header with a schema (closes [VERIFY] items)
   inspect-labels    count label values in a CSV column (closes [VERIFY] items)
   schema-docs       render a schema as a Markdown reference table
+  data-quality      measure raw-data quality of one CSV (reads only, never changes the data)
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import json
 import sys
 from collections import Counter
 from pathlib import Path
@@ -21,6 +23,7 @@ import yaml
 from cybersentinel_ml.contract.experiment import load_experiment
 from cybersentinel_ml.contract.schema import FeatureSchema, load_schema
 from cybersentinel_ml.contract.validation import all_passed, check_raw_header
+from cybersentinel_ml.data_quality import analyze_csv, render_text
 
 # Errors that mean 'this config file is broken' (pydantic's ValidationError is a ValueError).
 _CONFIG_ERRORS = (ValueError, yaml.YAMLError, FileNotFoundError)
@@ -207,6 +210,20 @@ def cmd_schema_docs(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_data_quality(args: argparse.Namespace) -> int:
+    schema = load_schema(args.schema)
+    try:
+        report = analyze_csv(args.csv, schema)
+    except ValueError as exc:
+        print(f"data-quality refused: {exc}")
+        return 1
+    sys.stdout.write(render_text(report))
+    if args.json:
+        Path(args.json).write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        print(f"wrote {args.json}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="cybersentinel-ml", description=__doc__.split("\n")[0])
     sub = p.add_subparsers(dest="command", required=True)
@@ -232,6 +249,12 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--schema", required=True)
     d.add_argument("--out")
     d.set_defaults(func=cmd_schema_docs)
+
+    q = sub.add_parser("data-quality", help="measure raw-data quality of a CSV that matches a schema")
+    q.add_argument("--schema", required=True)
+    q.add_argument("--csv", required=True)
+    q.add_argument("--json", help="also write the full report as JSON to this path")
+    q.set_defaults(func=cmd_data_quality)
     return p
 
 

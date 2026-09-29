@@ -5,6 +5,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versio
 ## [Unreleased]
 
 ### Added
+- `cybersentinel-ml data-quality`: reproducible raw-data diagnostic for one CSV (shape, label counts, missing and non-finite values, exact duplicate rows, Flow ID repeats, Protocol values, negative init-window values, Active/Idle magnitudes, PSH/URG and flag-count value profiles, Down/Up Ratio integrality). Measurement only
 - ADR 0012: Track A uses the published CNS2022 Improved CIC-IDS2017 release (`CICIDS2017_improved.zip`). The exact CICFlowMeter generation commit is recorded as unknown, not inferred
 - VERIFY V26: labelling notebook revision used for the release
 - ADR 0010: a dataset whose extractor version is not documented can be verified, but never used for inference. Extractor `commit_status` (`pinned`, `to_verify`, `not_documented`) replaces guessing from the commit text
